@@ -73,8 +73,8 @@ img {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
-  padding: 0.75rem 1.25rem;
+  gap: 2rem;
+  padding: 1rem 1.5rem;
   border-bottom: 1px solid rgba(148, 163, 184, 0.35);
   backdrop-filter: blur(18px);
   background-color: rgba(15, 23, 42, 0.9);
@@ -85,7 +85,7 @@ img {
 
 @media (min-width: 768px) {
   .header {
-    padding-inline: 2rem;
+    padding-inline: 2.5rem;
   }
 }
 
@@ -133,9 +133,11 @@ img {
 .nav-list {
   list-style: none;
   display: flex;
-  gap: 0.5rem;
+  justify-content: center;
+  gap: 1.5rem;
   padding: 0;
-  margin: 0;
+  margin: 0 auto;
+  flex: 1;
 }
 
 .nav-link {
