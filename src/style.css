@@ -3,7 +3,7 @@
   line-height: 1.5;
   font-weight: 400;
   color: #1f2933;
-  background-color: #ffffc5;
+  background-color: #fcfcde;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -19,7 +19,7 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background-color: #fdfda3;
+  background-color: #fcfcde;
   color: inherit;
 }
 
@@ -74,7 +74,7 @@ img {
   gap: 2rem;
   padding: 1rem 1.5rem;
   border-bottom: 1px solid rgba(148, 163, 184, 0.5);
-  background-color: #fdfda3;
+  background-color: #fdfdbc;
   position: sticky;
   top: 0;
   z-index: 10;
