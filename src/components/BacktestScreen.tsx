@@ -1,16 +1,45 @@
-import { useState } from 'react'
-import type { BacktestResult } from '../services/mockApi'
-import { runBacktest } from '../services/mockApi'
-
-const BACKTEST_STRATEGIES = ['BLSH BTC', 'Grid URUS', 'Pairs Trading', 'Mean Reversion']
+import { useEffect, useState } from 'react'
+import { useAuth } from '../contexts/AuthContext'
+import type { BacktestResult, StrategySummary } from '../services/api'
+import { fetchStrategies, runBacktest } from '../services/api'
 
 export function BacktestScreen() {
-  const [strategy, setStrategy] = useState(BACKTEST_STRATEGIES[0] ?? '')
+  const { token } = useAuth()
+  const [strategies, setStrategies] = useState<StrategySummary[]>([])
+  const [strategyId, setStrategyId] = useState('')
   const [amount, setAmount] = useState('1000')
   const [currency, setCurrency] = useState('USDT')
   const [datasetName, setDatasetName] = useState<string | null>(null)
   const [stats, setStats] = useState<BacktestResult | null>(null)
   const [isRunning, setIsRunning] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
+
+  useEffect(() => {
+    if (!token) {
+      return
+    }
+
+    let isMounted = true
+    void fetchStrategies(token)
+      .then((data) => {
+        if (!isMounted) {
+          return
+        }
+        setStrategies(data)
+        setStrategyId(String(data[0]?.id ?? ''))
+      })
+      .catch((error) => {
+        if (!isMounted) {
+          return
+        }
+        const message = error instanceof Error ? error.message : 'Failed to load strategies'
+        setErrorMessage(message)
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [token])
 
   return (
     <section aria-labelledby="backtest-heading" className="page">
@@ -26,20 +55,44 @@ export function BacktestScreen() {
             className="form"
             onSubmit={(event) => {
               event.preventDefault()
+              if (!token) {
+                return
+              }
+
+              const selectedStrategy = strategies.find((current) => String(current.id) === strategyId)
+              if (!selectedStrategy) {
+                setErrorMessage('Choose a strategy first')
+                return
+              }
+
               const parsedAmount = Number(amount) || 0
               setIsRunning(true)
-              void runBacktest({ strategy, amount: parsedAmount, currency }).then((result) => {
-                setStats(result)
-                setIsRunning(false)
+              setErrorMessage('')
+              void runBacktest(token, {
+                strategyId: selectedStrategy.id,
+                strategyName: selectedStrategy.name,
+                amount: parsedAmount,
+                currency,
+                datasetName: datasetName || `manual-${new Date().toISOString()}`,
               })
+                .then((result) => {
+                  setStats(result)
+                })
+                .catch((error) => {
+                  const message = error instanceof Error ? error.message : 'Backtest failed'
+                  setErrorMessage(message)
+                })
+                .finally(() => {
+                  setIsRunning(false)
+                })
             }}
           >
             <label className="field">
               <span className="field-label">Strategy</span>
-              <select value={strategy} onChange={(event) => setStrategy(event.target.value)}>
-                {BACKTEST_STRATEGIES.map((currentStrategy) => (
-                  <option key={currentStrategy} value={currentStrategy}>
-                    {currentStrategy}
+              <select value={strategyId} onChange={(event) => setStrategyId(event.target.value)}>
+                {strategies.map((currentStrategy) => (
+                  <option key={currentStrategy.id} value={String(currentStrategy.id)}>
+                    {currentStrategy.name}
                   </option>
                 ))}
               </select>
@@ -82,8 +135,9 @@ export function BacktestScreen() {
             </label>
 
             <button type="submit" className="primary-button" disabled={isRunning}>
-              {isRunning ? 'Running…' : 'Run backtest (mock)'}
+              {isRunning ? 'Running...' : 'Run backtest'}
             </button>
+            {errorMessage ? <p className="field-help field-help--error">{errorMessage}</p> : null}
           </form>
         </aside>
 
@@ -127,8 +181,8 @@ export function BacktestScreen() {
             <aside className="card backtest-notes-card">
               <h2 className="section-title">Additional info</h2>
               <p className="muted">
-                This is a mocked backtest. Once the backend is connected, this area will display detailed
-                statistics about trades, risk metrics, and strategy behaviour over time.
+                This screen is now connected to the backend API. The submitted run is persisted as a
+                backtest record and the summary is read from stored results.
               </p>
             </aside>
           </div>

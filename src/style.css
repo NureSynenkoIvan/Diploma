@@ -329,6 +329,10 @@ img {
   margin: 0.15rem 0 0;
 }
 
+.field-help--error {
+  color: #b91c1c;
+}
+
 .field--inline {
   display: grid;
   grid-template-columns: 1.8fr minmax(0, 0.9fr);

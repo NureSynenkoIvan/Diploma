@@ -9,14 +9,25 @@ export function LoginScreen() {
   const { login: performLogin } = useAuth()
   const [loginValue, setLoginValue] = useState('')
   const [password, setPassword] = useState('')
+  const [errorMessage, setErrorMessage] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const handleSubmit = (event: FormEvent) => {
+  const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
     if (loginValue.trim() && password.trim()) {
-      performLogin()
-      const state = location.state as { from?: { pathname?: string } } | null
-      const redirectTo = state?.from?.pathname ?? '/bots'
-      navigate(redirectTo, { replace: true })
+      setErrorMessage('')
+      setIsSubmitting(true)
+      try {
+        await performLogin(loginValue.trim(), password)
+        const state = location.state as { from?: { pathname?: string } } | null
+        const redirectTo = state?.from?.pathname ?? '/bots'
+        navigate(redirectTo, { replace: true })
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Login failed'
+        setErrorMessage(message)
+      } finally {
+        setIsSubmitting(false)
+      }
     }
   }
 
@@ -52,9 +63,11 @@ export function LoginScreen() {
             />
           </label>
 
-          <button type="submit" className="primary-button">
-            Login
+          <button type="submit" className="primary-button" disabled={isSubmitting}>
+            {isSubmitting ? 'Logging in...' : 'Login'}
           </button>
+
+          {errorMessage ? <p className="field-help field-help--error">{errorMessage}</p> : null}
 
           <div className="login-divider" aria-hidden="true">
             <span>or</span>

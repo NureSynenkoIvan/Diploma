@@ -1,36 +1,37 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import { clearAuthToken, getAuthToken, login as loginRequest, setAuthToken } from '../services/api'
 
 type AuthContextValue = {
   isAuthenticated: boolean
-  login: () => void
+  token: string | null
+  login: (loginValue: string, password: string) => Promise<void>
   logout: () => void
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [token, setToken] = useState<string | null>(null)
 
   useEffect(() => {
-    const stored = window.localStorage.getItem('trading-app:auth')
-    if (stored === 'true') {
-      setIsAuthenticated(true)
-    }
+    setToken(getAuthToken())
   }, [])
 
   const value = useMemo<AuthContextValue>(
     () => ({
-      isAuthenticated,
-      login: () => {
-        window.localStorage.setItem('trading-app:auth', 'true')
-        setIsAuthenticated(true)
+      isAuthenticated: token != null,
+      token,
+      login: async (loginValue: string, password: string) => {
+        const nextToken = await loginRequest(loginValue, password)
+        setAuthToken(nextToken)
+        setToken(nextToken)
       },
       logout: () => {
-        window.localStorage.removeItem('trading-app:auth')
-        setIsAuthenticated(false)
+        clearAuthToken()
+        setToken(null)
       },
     }),
-    [isAuthenticated],
+    [token],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

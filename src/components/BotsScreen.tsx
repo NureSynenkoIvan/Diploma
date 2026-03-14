@@ -1,26 +1,21 @@
 import { useEffect, useMemo, useState } from 'react'
-import type { TradingBot } from '../services/mockApi'
-import { createOrUpdateBot, deleteBot, fetchBots } from '../services/mockApi'
+import { useAuth } from '../contexts/AuthContext'
+import type { StrategySummary, TradingBot } from '../services/api'
+import { createOrUpdateBot, deleteBot, fetchBots, fetchStrategies } from '../services/api'
 
 type BotFormState = {
   id?: number
   name: string
-  strategy: string
+  strategyId: string
   symbols: string[]
   amount: string
   currency: string
   wallet: string
 }
 
-const STRATEGIES = [
-  { id: 'blsh-btc', label: 'BLSH BTC', requiresMultipleSymbols: false },
-  { id: 'grid-urus', label: 'Grid URUS', requiresMultipleSymbols: true },
-  { id: 'pairs', label: 'Pairs Trading', requiresMultipleSymbols: true },
-]
-
 const DEFAULT_FORM: BotFormState = {
   name: '',
-  strategy: STRATEGIES[0]?.id ?? '',
+  strategyId: '',
   symbols: [''],
   amount: '',
   currency: 'USDT',
@@ -28,18 +23,36 @@ const DEFAULT_FORM: BotFormState = {
 }
 
 export function BotsScreen() {
+  const { token } = useAuth()
   const [bots, setBots] = useState<TradingBot[]>([])
+  const [strategies, setStrategies] = useState<StrategySummary[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [formState, setFormState] = useState<BotFormState>(DEFAULT_FORM)
+  const [errorMessage, setErrorMessage] = useState('')
 
   useEffect(() => {
+    if (!token) {
+      return
+    }
+
     let isMounted = true
-    fetchBots()
-      .then((data) => {
+    Promise.all([fetchBots(token), fetchStrategies(token)])
+      .then(([botsData, strategiesData]) => {
         if (isMounted) {
-          setBots(data)
+          setBots(botsData)
+          setStrategies(strategiesData)
+          setFormState((current) => ({
+            ...current,
+            strategyId: current.strategyId || String(strategiesData[0]?.id ?? ''),
+          }))
+        }
+      })
+      .catch((error) => {
+        if (isMounted) {
+          const message = error instanceof Error ? error.message : 'Failed to load data'
+          setErrorMessage(message)
         }
       })
       .finally(() => {
@@ -51,21 +64,21 @@ export function BotsScreen() {
     return () => {
       isMounted = false
     }
-  }, [])
+  }, [token])
 
   const filteredBots = useMemo(
     () =>
       bots.filter(
         (bot) =>
           bot.name.toLowerCase().includes(search.toLowerCase()) ||
-          bot.strategy.toLowerCase().includes(search.toLowerCase()) ||
-          bot.symbol.toLowerCase().includes(search.toLowerCase()),
+          bot.strategyName.toLowerCase().includes(search.toLowerCase()) ||
+          bot.symbols.some((symbol) => symbol.toLowerCase().includes(search.toLowerCase())),
       ),
     [bots, search],
   )
 
   const handleAdd = () => {
-    setFormState(DEFAULT_FORM)
+    setFormState({ ...DEFAULT_FORM, strategyId: String(strategies[0]?.id ?? '') })
     setIsDialogOpen(true)
   }
 
@@ -73,9 +86,8 @@ export function BotsScreen() {
     setFormState({
       id: bot.id,
       name: bot.name,
-      strategy:
-        STRATEGIES.find((strategy) => strategy.label === bot.strategy)?.id ?? STRATEGIES[0]?.id ?? '',
-      symbols: [bot.symbol],
+      strategyId: String(bot.strategyId),
+      symbols: bot.symbols.length > 0 ? bot.symbols : [''],
       amount: '',
       currency: 'USDT',
       wallet: '',
@@ -84,22 +96,31 @@ export function BotsScreen() {
   }
 
   const handleDelete = (id: number) => {
+    if (!token) {
+      return
+    }
+
     setBots((previous) => previous.filter((bot) => bot.id !== id))
-    void deleteBot(id)
+    void deleteBot(token, id).catch(() => {
+      void fetchBots(token).then((data) => setBots(data))
+    })
   }
 
   const handleFormSubmit = () => {
-    const primarySymbol = formState.symbols[0] ?? ''
-    const strategyLabel =
-      STRATEGIES.find((strategy) => strategy.id === formState.strategy)?.label ?? formState.strategy
+    if (!token) {
+      return
+    }
 
-    const payloadName = `${formState.name} ${primarySymbol}`.trim()
+    const sanitizedSymbols = formState.symbols.map((symbol) => symbol.trim()).filter(Boolean)
+    if (!formState.strategyId) {
+      return
+    }
 
-    void createOrUpdateBot({
+    void createOrUpdateBot(token, {
       id: formState.id,
-      name: payloadName,
-      strategy: strategyLabel,
-      symbol: primarySymbol,
+      name: formState.name.trim(),
+      strategyId: Number(formState.strategyId),
+      symbols: sanitizedSymbols,
     }).then((saved) => {
       setBots((previous) => {
         const exists = previous.some((bot) => bot.id === saved.id)
@@ -112,8 +133,8 @@ export function BotsScreen() {
     setIsDialogOpen(false)
   }
 
-  const activeStrategyMeta = STRATEGIES.find((strategy) => strategy.id === formState.strategy)
-  const requiresMultipleSymbols = activeStrategyMeta?.requiresMultipleSymbols ?? false
+  const activeStrategyMeta = strategies.find((strategy) => String(strategy.id) === formState.strategyId)
+  const requiresMultipleSymbols = (activeStrategyMeta?.symbols_required ?? 1) > 1
 
   return (
     <section aria-labelledby="bots-heading" className="page">
@@ -153,7 +174,7 @@ export function BotsScreen() {
                 isLoading ? (
                   <tr>
                     <td colSpan={7} className="table-empty">
-                      Loading bots from mock API…
+                      Loading bots from API...
                     </td>
                   </tr>
                 ) : (
@@ -168,12 +189,10 @@ export function BotsScreen() {
                   <tr key={bot.id}>
                     <td>{index + 1}</td>
                     <td>{bot.name}</td>
-                    <td>{bot.strategy}</td>
-                    <td>{bot.symbol}</td>
+                    <td>{bot.strategyName}</td>
+                    <td>{bot.symbols.join(', ')}</td>
                     <td>{new Date(bot.startedAt).toLocaleDateString()}</td>
-                    <td className={bot.profitPercent >= 0 ? 'profit-positive' : 'profit-negative'}>
-                      {bot.profitPercent.toFixed(1)}%
-                    </td>
+                    <td className="muted">N/A</td>
                     <td className="table-actions">
                       <button type="button" onClick={() => handleEdit(bot)} className="ghost-button">
                         Edit
@@ -186,6 +205,7 @@ export function BotsScreen() {
                         Delete
                       </button>
                     </td>
+                {errorMessage ? <p className="field-help field-help--error">{errorMessage}</p> : null}
                   </tr>
                 ))
               )}
@@ -223,21 +243,21 @@ export function BotsScreen() {
                 <label className="field">
                   <span className="field-label">Strategy</span>
                   <select
-                    value={formState.strategy}
+                    value={formState.strategyId}
                     onChange={(event) => {
-                      const nextStrategy = event.target.value
-                      const nextMeta = STRATEGIES.find((strategy) => strategy.id === nextStrategy)
-                      const needsMultiple = nextMeta?.requiresMultipleSymbols ?? false
+                      const nextStrategyId = event.target.value
+                      const nextMeta = strategies.find((strategy) => String(strategy.id) === nextStrategyId)
+                      const requiredSymbols = nextMeta?.symbols_required ?? 1
                       setFormState({
                         ...formState,
-                        strategy: nextStrategy,
-                        symbols: needsMultiple ? ['', ''] : [''],
+                        strategyId: nextStrategyId,
+                        symbols: Array.from({ length: Math.max(1, requiredSymbols) }, () => ''),
                       })
                     }}
                   >
-                    {STRATEGIES.map((strategy) => (
-                      <option key={strategy.id} value={strategy.id}>
-                        {strategy.label}
+                    {strategies.map((strategy) => (
+                      <option key={strategy.id} value={String(strategy.id)}>
+                        {strategy.name}
                       </option>
                     ))}
                   </select>
@@ -344,7 +364,7 @@ export function BotsScreen() {
                 type="button"
                 className="primary-button"
                 onClick={handleFormSubmit}
-                disabled={!formState.name.trim() || !formState.symbols[0]?.trim()}
+                disabled={!formState.name.trim() || !formState.symbols[0]?.trim() || !formState.strategyId}
               >
                 Save bot
               </button>
