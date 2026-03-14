@@ -10,7 +10,7 @@ from db.models import Bot as BotModel
 from db.models import Strategy as StrategyModel
 from db.session import SessionLocal
 from executor.Bot import Bot as RuntimeBot
-from executor.MultithreadExecutor import MultithreadExecutor
+from backend.executor.implementation.MultithreadExecutor import MultithreadExecutor
 from strategies.Strategy import Strategy as BaseStrategy
 
 

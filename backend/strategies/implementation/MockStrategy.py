@@ -6,4 +6,4 @@ class MockStrategy(Strategy):
         super().__init__(name, description, required_symbols, timeframe)
 
     def on_tick(self, tick=0):
-        print(f"{self.name}: Tick received: {tick}")
+        print(f"{self.name}: Tick received: {tick}\n")

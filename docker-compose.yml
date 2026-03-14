@@ -1,0 +1,26 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    container_name: diploma-backend
+    restart: unless-stopped
+    volumes:
+      - backend_data:/app/data
+    environment:
+      - DATABASE_URL=sqlite:////app/data/app.db
+      - FASTAPI_ROOT_PATH=/api
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: /api
+    container_name: diploma-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "5173:80"
+
+volumes:
+  backend_data:
