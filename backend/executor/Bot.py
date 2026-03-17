@@ -5,5 +5,4 @@ class Bot:
         self.symbols = symbols
 
         strategy.validate(self)
-
-    
+        
