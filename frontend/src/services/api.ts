@@ -13,6 +13,8 @@ export type TradingBot = {
   strategyName: string
   symbols: string[]
   startedAt: string
+  moneyAmount: number | null
+  moneyCurrency: string | null
 }
 
 export type CreateOrUpdateBotInput = {
@@ -20,6 +22,8 @@ export type CreateOrUpdateBotInput = {
   name: string
   strategyId: number
   symbols: string[]
+  moneyAmount: number | null
+  moneyCurrency: string | null
 }
 
 export type BacktestRequest = {
@@ -49,6 +53,8 @@ type ApiBot = {
   strategy_name: string
   symbols: string[]
   started_at: string
+  money_amount: number | null
+  money_symbol: string | null
 }
 
 const AUTH_TOKEN_STORAGE_KEY = 'trading-app:token'
@@ -124,6 +130,8 @@ function mapApiBot(bot: ApiBot): TradingBot {
     strategyName: bot.strategy_name,
     symbols: bot.symbols,
     startedAt: bot.started_at,
+    moneyAmount: bot.money_amount,
+    moneyCurrency: bot.money_symbol,
   }
 }
 
@@ -142,6 +150,8 @@ export async function createOrUpdateBot(token: string, input: CreateOrUpdateBotI
           name: input.name,
           strategy_id: input.strategyId,
           symbols: input.symbols,
+          money_amount: input.moneyAmount,
+          money_symbol: input.moneyCurrency,
         }),
       },
       token,
@@ -157,6 +167,8 @@ export async function createOrUpdateBot(token: string, input: CreateOrUpdateBotI
         name: input.name,
         strategy_id: input.strategyId,
         symbols: input.symbols,
+        money_amount: input.moneyAmount,
+        money_symbol: input.moneyCurrency,
       }),
     },
     token,
@@ -169,49 +181,36 @@ export async function deleteBot(token: string, id: number): Promise<void> {
 }
 
 export async function runBacktest(token: string, request: BacktestRequest): Promise<BacktestResult> {
-  const baseMultiplier = request.strategyName.toLowerCase().includes('grid') ? 1.2 : 1
-  const overallProfitPercent = 15 * baseMultiplier
-  const meanMonthlyProfitPercent = 1.2 * baseMultiplier
-  const maxDrawdownPercent = 4.5 / baseMultiplier
-  const winRatePercent = Math.min(100, 58 * baseMultiplier)
-
-  const stats: BacktestResult = {
-    overallProfitPercent,
-    meanMonthlyProfitPercent,
-    maxDrawdownPercent,
-    winRatePercent,
+  type RunBacktestApiResponse = {
+    id: number
+    strategy_id: number
+    strategy_name: string
+    test_time: string
+    dataset_name: string
+    overall_profit_percent: number
+    mean_monthly_profit_percent: number
+    max_drawdown_percent: number
+    win_rate_percent: number
   }
 
-  type BacktestApiResponse = {
-    results: string
-  }
-
-  const payload = await apiRequest<BacktestApiResponse>(
-    '/backtests',
+  const payload = await apiRequest<RunBacktestApiResponse>(
+    '/backtests/run',
     {
       method: 'POST',
       body: JSON.stringify({
         strategy_id: request.strategyId,
         dataset_name: request.datasetName || `manual-${new Date().toISOString()}`,
-        results: JSON.stringify({
-          ...stats,
-          amount: request.amount,
-          currency: request.currency,
-        }),
+        money_amount: request.amount,
+        money_symbol: request.currency,
       }),
     },
     token,
   )
 
-  try {
-    const parsed = JSON.parse(payload.results) as Partial<BacktestResult>
-    return {
-      overallProfitPercent: parsed.overallProfitPercent ?? stats.overallProfitPercent,
-      meanMonthlyProfitPercent: parsed.meanMonthlyProfitPercent ?? stats.meanMonthlyProfitPercent,
-      maxDrawdownPercent: parsed.maxDrawdownPercent ?? stats.maxDrawdownPercent,
-      winRatePercent: parsed.winRatePercent ?? stats.winRatePercent,
-    }
-  } catch {
-    return stats
+  return {
+    overallProfitPercent: payload.overall_profit_percent,
+    meanMonthlyProfitPercent: payload.mean_monthly_profit_percent,
+    maxDrawdownPercent: payload.max_drawdown_percent,
+    winRatePercent: payload.win_rate_percent,
   }
 }

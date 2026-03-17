@@ -22,6 +22,19 @@ const DEFAULT_FORM: BotFormState = {
   wallet: '',
 }
 
+function getRequiredSymbolCount(strategies: StrategySummary[], strategyId: string): number {
+  const required = strategies.find((strategy) => String(strategy.id) === strategyId)?.symbols_required ?? 1
+  return Math.max(1, required)
+}
+
+function normalizeSymbols(values: string[], requiredCount: number): string[] {
+  const next = values.slice(0, requiredCount)
+  while (next.length < requiredCount) {
+    next.push('')
+  }
+  return next
+}
+
 export function BotsScreen() {
   const { token } = useAuth()
   const [bots, setBots] = useState<TradingBot[]>([])
@@ -78,18 +91,26 @@ export function BotsScreen() {
   )
 
   const handleAdd = () => {
-    setFormState({ ...DEFAULT_FORM, strategyId: String(strategies[0]?.id ?? '') })
+    const strategyId = String(strategies[0]?.id ?? '')
+    const requiredCount = getRequiredSymbolCount(strategies, strategyId)
+    setFormState({
+      ...DEFAULT_FORM,
+      strategyId,
+      symbols: normalizeSymbols([], requiredCount),
+    })
     setIsDialogOpen(true)
   }
 
   const handleEdit = (bot: TradingBot) => {
+    const strategyId = String(bot.strategyId)
+    const requiredCount = getRequiredSymbolCount(strategies, strategyId)
     setFormState({
       id: bot.id,
       name: bot.name,
-      strategyId: String(bot.strategyId),
-      symbols: bot.symbols.length > 0 ? bot.symbols : [''],
-      amount: '',
-      currency: 'USDT',
+      strategyId,
+      symbols: normalizeSymbols(bot.symbols, requiredCount),
+      amount: bot.moneyAmount != null ? String(bot.moneyAmount) : '',
+      currency: bot.moneyCurrency ?? 'USDT',
       wallet: '',
     })
     setIsDialogOpen(true)
@@ -111,8 +132,13 @@ export function BotsScreen() {
       return
     }
 
-    const sanitizedSymbols = formState.symbols.map((symbol) => symbol.trim()).filter(Boolean)
     if (!formState.strategyId) {
+      return
+    }
+
+    const requiredCount = getRequiredSymbolCount(strategies, formState.strategyId)
+    const sanitizedSymbols = normalizeSymbols(formState.symbols, requiredCount).map((symbol) => symbol.trim())
+    if (sanitizedSymbols.some((symbol) => !symbol)) {
       return
     }
 
@@ -121,6 +147,8 @@ export function BotsScreen() {
       name: formState.name.trim(),
       strategyId: Number(formState.strategyId),
       symbols: sanitizedSymbols,
+      moneyAmount: formState.amount !== '' ? Number(formState.amount) : null,
+      moneyCurrency: formState.currency || null,
     }).then((saved) => {
       setBots((previous) => {
         const exists = previous.some((bot) => bot.id === saved.id)
@@ -205,13 +233,13 @@ export function BotsScreen() {
                         Delete
                       </button>
                     </td>
-                {errorMessage ? <p className="field-help field-help--error">{errorMessage}</p> : null}
                   </tr>
                 ))
               )}
             </tbody>
           </table>
         </div>
+        {errorMessage ? <p className="field-help field-help--error">{errorMessage}</p> : null}
       </div>
 
       {isDialogOpen && (
@@ -246,12 +274,11 @@ export function BotsScreen() {
                     value={formState.strategyId}
                     onChange={(event) => {
                       const nextStrategyId = event.target.value
-                      const nextMeta = strategies.find((strategy) => String(strategy.id) === nextStrategyId)
-                      const requiredSymbols = nextMeta?.symbols_required ?? 1
+                      const requiredCount = getRequiredSymbolCount(strategies, nextStrategyId)
                       setFormState({
                         ...formState,
                         strategyId: nextStrategyId,
-                        symbols: Array.from({ length: Math.max(1, requiredSymbols) }, () => ''),
+                        symbols: normalizeSymbols(formState.symbols, requiredCount),
                       })
                     }}
                   >
@@ -270,7 +297,7 @@ export function BotsScreen() {
 
                 <div className="field">
                   <span className="field-label">
-                    Symbol{requiresMultipleSymbols ? 's' : ''}
+                    Symbol{formState.symbols.length > 1 ? 's' : ''}
                   </span>
                   {formState.symbols.map((symbol, index) => (
                     <input
@@ -285,20 +312,6 @@ export function BotsScreen() {
                       placeholder={index === 0 ? 'e.g. BTC' : 'Additional symbol'}
                     />
                   ))}
-                  {requiresMultipleSymbols && (
-                    <button
-                      type="button"
-                      className="ghost-button ghost-button--small"
-                      onClick={() =>
-                        setFormState({
-                          ...formState,
-                          symbols: [...formState.symbols, ''],
-                        })
-                      }
-                    >
-                      Add symbol
-                    </button>
-                  )}
                 </div>
 
                 <div className="field field--inline">
@@ -364,7 +377,11 @@ export function BotsScreen() {
                 type="button"
                 className="primary-button"
                 onClick={handleFormSubmit}
-                disabled={!formState.name.trim() || !formState.symbols[0]?.trim() || !formState.strategyId}
+                disabled={
+                  !formState.name.trim() ||
+                  !formState.strategyId ||
+                  formState.symbols.some((symbol) => !symbol.trim())
+                }
               >
                 Save bot
               </button>

@@ -18,17 +18,26 @@ class BotCreateRequest(BaseModel):
     name: str
     strategy_id: int
     symbols: list[str]
+    additional_info: str | None = None
+    money_amount: float | None = None
+    money_symbol: str | None = None
 
 
 class BotUpdateRequest(BaseModel):
     name: str | None = None
     strategy_id: int | None = None
     symbols: list[str] | None = None
+    additional_info: str | None = None
+    money_amount: float | None = None
+    money_symbol: str | None = None
 
 
 class BotResponse(BaseModel):
     id: int
     name: str
+    additional_info: str | None
+    money_amount: float | None
+    money_symbol: str | None
     strategy_id: int
     strategy_name: str
     symbols: list[str]
@@ -56,6 +65,9 @@ def _to_response(bot: Bot, strategy_name: str) -> BotResponse:
     return BotResponse(
         id=bot.id,
         name=bot.name,
+        additional_info=bot.additional_info,
+        money_amount=bot.money_amount,
+        money_symbol=bot.money_symbol,
         strategy_id=bot.strategy_id,
         strategy_name=strategy_name,
         symbols=bot.symbols,
@@ -87,12 +99,20 @@ def create_bot(
 ) -> BotResponse:
     strategy = _require_strategy(db, payload.strategy_id)
 
-    bot = Bot(name=payload.name, strategy_id=payload.strategy_id, symbols=payload.symbols)
+    bot = Bot(
+        name=payload.name,
+        strategy_id=payload.strategy_id,
+        symbols=payload.symbols,
+        additional_info=payload.additional_info,
+        money_amount=payload.money_amount,
+        money_symbol=payload.money_symbol,
+    )
     db.add(bot)
 
     try:
         db.flush()
-        runtime_registry.create(bot.id, bot.name, bot.symbols, strategy)
+        runtime_registry.create(bot.id, bot.name, bot.symbols, strategy,
+                                 bot.money_amount, bot.money_symbol)
     except ValueError as error:
         db.rollback()
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(error))
@@ -135,9 +155,16 @@ def update_bot(
         bot.strategy_id = payload.strategy_id
     if payload.symbols is not None:
         bot.symbols = payload.symbols
+    if payload.additional_info is not None:
+        bot.additional_info = payload.additional_info
+    if payload.money_amount is not None:
+        bot.money_amount = payload.money_amount
+    if payload.money_symbol is not None:
+        bot.money_symbol = payload.money_symbol
 
     try:
-        runtime_registry.update(bot.id, bot.name, bot.symbols, strategy)
+        runtime_registry.update(bot.id, bot.name, bot.symbols, strategy,
+                                 bot.money_amount, bot.money_symbol)
     except ValueError as error:
         db.rollback()
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(error))

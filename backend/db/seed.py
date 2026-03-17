@@ -17,6 +17,7 @@ DEFAULT_PASSWORD = "user"
 
 def _iter_strategy_instances() -> list[BaseStrategy]:
     """Dynamically import strategy implementations and return instances of them.
+
     Modify the strategy in code and it'll persist in the database after running the seed function, without the need to modify the seed function itself.
     """
     strategy_instances: list[BaseStrategy] = []
@@ -66,6 +67,9 @@ def seed_defaults() -> None:
                 db.execute(select(StrategyModel).where(StrategyModel.name == strategy.name)).scalar_one_or_none()
             )
             if existing_strategy is not None:
+                existing_strategy.description = strategy.description
+                existing_strategy.symbols_required = _symbols_required(strategy.required_symbols)
+                existing_strategy.timeframe = _timeframe_value(strategy.timeframe)
                 continue
 
             db.add(

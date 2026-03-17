@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -7,10 +8,14 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from backtest_engine.BacktestEngine import BacktestEngine
 from db.models import BacktestResult, Strategy
 from db.session import get_db
+from executor.runtime_registry import StrategyFactory
 
 router = APIRouter(prefix="/backtests", tags=["Backtests"])
+
+_strategy_factory = StrategyFactory()
 
 
 class BacktestCreateRequest(BaseModel):
@@ -126,3 +131,66 @@ def delete_backtest(backtest_id: int, db: Session = Depends(get_db)) -> None:
 
     db.delete(backtest)
     db.commit()
+
+
+class RunBacktestRequest(BaseModel):
+    strategy_id: int
+    dataset_name: str
+    money_amount: float = 0.0
+    money_symbol: str = 'USDT'
+
+
+class RunBacktestResponse(BaseModel):
+    id: int
+    strategy_id: int
+    strategy_name: str
+    test_time: datetime
+    dataset_name: str
+    overall_profit_percent: float
+    mean_monthly_profit_percent: float
+    max_drawdown_percent: float
+    win_rate_percent: float
+
+
+@router.post("/run", response_model=RunBacktestResponse, status_code=status.HTTP_201_CREATED)
+def run_backtest(payload: RunBacktestRequest, db: Session = Depends(get_db)) -> RunBacktestResponse:
+    strategy_db = _require_strategy(db, payload.strategy_id)
+
+    try:
+        runtime_strategy = _strategy_factory.create(strategy_db.name)
+    except ValueError as error:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(error))
+
+    runtime_strategy.money_amount = payload.money_amount
+    runtime_strategy.money_symbol = payload.money_symbol
+
+    engine = BacktestEngine()
+    engine_result = engine.run(runtime_strategy, [], payload.money_amount, payload.money_symbol)
+
+    results_json = json.dumps({
+        'overall_profit_percent': engine_result.overall_profit_percent,
+        'mean_monthly_profit_percent': engine_result.mean_monthly_profit_percent,
+        'max_drawdown_percent': engine_result.max_drawdown_percent,
+        'win_rate_percent': engine_result.win_rate_percent,
+    })
+
+    backtest = BacktestResult(
+        strategy_id=payload.strategy_id,
+        dataset_name=payload.dataset_name,
+        results=results_json,
+    )
+    db.add(backtest)
+    db.commit()
+    db.refresh(backtest)
+
+    return RunBacktestResponse(
+        id=backtest.id,
+        strategy_id=backtest.strategy_id,
+        strategy_name=strategy_db.name,
+        test_time=backtest.test_time,
+        dataset_name=backtest.dataset_name,
+        overall_profit_percent=engine_result.overall_profit_percent,
+        mean_monthly_profit_percent=engine_result.mean_monthly_profit_percent,
+        max_drawdown_percent=engine_result.max_drawdown_percent,
+        win_rate_percent=engine_result.win_rate_percent,
+    )

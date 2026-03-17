@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import List, Optional
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, func
+from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import JSON
 
@@ -38,6 +38,9 @@ class Bot(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(200), index=True, nullable=False)
+    additional_info: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    money_amount: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    money_symbol: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
 
     strategy_id: Mapped[int] = mapped_column(ForeignKey("strategies.id"), nullable=False, index=True)
     strategy: Mapped["Strategy"] = relationship(back_populates="bots")

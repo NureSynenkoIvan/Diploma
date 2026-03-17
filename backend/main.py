@@ -9,7 +9,7 @@ from api.bots.bots import router as bots_router
 from api.strategies.strategies import router as strategies_router
 from api.users.users import router as users_router
 from db.seed import seed_defaults
-from backend.executor.implementation.MultithreadExecutor import MultithreadExecutor
+from executor.implementation.MultithreadExecutor import MultithreadExecutor
 from executor.runtime_registry import BotRuntimeRegistry
 
 def init_bot_runtime_registry() -> BotRuntimeRegistry:

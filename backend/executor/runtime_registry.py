@@ -10,7 +10,7 @@ from db.models import Bot as BotModel
 from db.models import Strategy as StrategyModel
 from db.session import SessionLocal
 from executor.Bot import Bot as RuntimeBot
-from backend.executor.implementation.MultithreadExecutor import MultithreadExecutor
+from executor.implementation.MultithreadExecutor import MultithreadExecutor
 from strategies.Strategy import Strategy as BaseStrategy
 
 
@@ -70,15 +70,20 @@ class BotRuntimeRegistry:
         with SessionLocal() as db:
             bots = db.query(BotModel).all()
             for bot in bots:
-                runtime_bot = self._build_runtime_bot(bot.name, bot.symbols, bot.strategy)
+                runtime_bot = self._build_runtime_bot(
+                    bot.name, bot.symbols, bot.strategy,
+                    bot.money_amount, bot.money_symbol,
+                )
                 self._add_runtime_bot(bot.id, runtime_bot)
 
-    def create(self, db_bot_id: int, name: str, symbols: list[str], strategy: StrategyModel) -> None:
-        runtime_bot = self._build_runtime_bot(name, symbols, strategy)
+    def create(self, db_bot_id: int, name: str, symbols: list[str], strategy: StrategyModel,
+               money_amount: float | None = None, money_symbol: str | None = None) -> None:
+        runtime_bot = self._build_runtime_bot(name, symbols, strategy, money_amount, money_symbol)
         self._add_runtime_bot(db_bot_id, runtime_bot)
 
-    def update(self, db_bot_id: int, name: str, symbols: list[str], strategy: StrategyModel) -> None:
-        runtime_bot = self._build_runtime_bot(name, symbols, strategy)
+    def update(self, db_bot_id: int, name: str, symbols: list[str], strategy: StrategyModel,
+               money_amount: float | None = None, money_symbol: str | None = None) -> None:
+        runtime_bot = self._build_runtime_bot(name, symbols, strategy, money_amount, money_symbol)
         with self._lock:
             previous = self._records.get(db_bot_id)
             if previous is not None:
@@ -92,11 +97,16 @@ class BotRuntimeRegistry:
             if previous is not None:
                 self._executor.remove_bot(previous.bot)
 
-    def _build_runtime_bot(self, name: str, symbols: list[str], strategy: StrategyModel) -> RuntimeBot:
+    def _build_runtime_bot(self, name: str, symbols: list[str], strategy: StrategyModel,
+                           money_amount: float | None = None, money_symbol: str | None = None) -> RuntimeBot:
         runtime_strategy = self._strategy_factory.create(strategy.name)
         runtime_strategy.name = strategy.name
         runtime_strategy.description = strategy.description
         runtime_strategy.required_symbols = strategy.symbols_required
+        if money_amount is not None:
+            runtime_strategy.money_amount = money_amount
+        if money_symbol is not None:
+            runtime_strategy.money_symbol = money_symbol
         return RuntimeBot(name=name, strategy=runtime_strategy, symbols=symbols)
 
     def _add_runtime_bot(self, db_bot_id: int, runtime_bot: RuntimeBot) -> None:
