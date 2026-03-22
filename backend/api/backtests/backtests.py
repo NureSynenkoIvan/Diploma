@@ -1,14 +1,16 @@
 from __future__ import annotations
 
 import json
+import csv
+from io import StringIO
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from backtest_engine.BacktestEngine import BacktestEngine
+from backtest.BacktestEngine import BacktestEngine
 from db.models import BacktestResult, Strategy
 from db.session import get_db
 from executor.runtime_registry import StrategyFactory
@@ -40,6 +42,7 @@ class BacktestResponse(BaseModel):
 
 
 def _require_strategy(db: Session, strategy_id: int) -> Strategy:
+    print(f"Fetching strategy with ID: {strategy_id}")
     strategy = db.get(Strategy, strategy_id)
     if strategy is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Strategy not found")
@@ -140,6 +143,41 @@ class RunBacktestRequest(BaseModel):
     money_symbol: str = 'USDT'
 
 
+def _parse_dataset_file(dataset_file: UploadFile) -> list[dict]:
+    filename = (dataset_file.filename or '').lower()
+    raw_bytes = dataset_file.file.read()
+
+    if not raw_bytes:
+        return []
+
+    try:
+        raw_text = raw_bytes.decode('utf-8')
+    except UnicodeDecodeError as error:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Dataset file must be UTF-8 encoded') from error
+
+    if filename.endswith('.json'):
+        try:
+            parsed = json.loads(raw_text)
+        except json.JSONDecodeError as error:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Invalid JSON dataset format') from error
+
+        if isinstance(parsed, list):
+            return [item for item in parsed if isinstance(item, dict)]
+        if isinstance(parsed, dict):
+            return [parsed]
+
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='JSON dataset must be an object or an array of objects')
+
+    if filename.endswith('.csv'):
+        try:
+            reader = csv.DictReader(StringIO(raw_text))
+            return [dict(row) for row in reader]
+        except csv.Error as error:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Invalid CSV dataset format') from error
+
+    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Only .csv and .json datasets are supported')
+
+
 class RunBacktestResponse(BaseModel):
     id: int
     strategy_id: int
@@ -153,19 +191,27 @@ class RunBacktestResponse(BaseModel):
 
 
 @router.post("/run", response_model=RunBacktestResponse, status_code=status.HTTP_201_CREATED)
-def run_backtest(payload: RunBacktestRequest, db: Session = Depends(get_db)) -> RunBacktestResponse:
-    strategy_db = _require_strategy(db, payload.strategy_id)
+def run_backtest(
+    strategy_id: int = Form(...),
+    money_amount: float = Form(0.0),
+    money_symbol: str = Form('USDT'),
+    dataset_name: str | None = Form(None),
+    dataset_file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+) -> RunBacktestResponse:
+    strategy_db = _require_strategy(db, strategy_id)
 
     try:
+        print(f"Creating runtime strategy for '{strategy_db.name}'")
         runtime_strategy = _strategy_factory.create(strategy_db.name)
     except ValueError as error:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(error))
 
-    runtime_strategy.money_amount = payload.money_amount
-    runtime_strategy.money_symbol = payload.money_symbol
-
+    historical_data = _parse_dataset_file(dataset_file)
     engine = BacktestEngine()
-    engine_result = engine.run(runtime_strategy, [], payload.money_amount, payload.money_symbol)
+    engine_result = engine.run(runtime_strategy, historical_data, money_amount, money_symbol)
+
+    resolved_dataset_name = dataset_name or dataset_file.filename or f"manual-{datetime.utcnow().isoformat()}"
 
     results_json = json.dumps({
         'overall_profit_percent': engine_result.overall_profit_percent,
@@ -175,8 +221,8 @@ def run_backtest(payload: RunBacktestRequest, db: Session = Depends(get_db)) -> 
     })
 
     backtest = BacktestResult(
-        strategy_id=payload.strategy_id,
-        dataset_name=payload.dataset_name,
+        strategy_id=strategy_id,
+        dataset_name=resolved_dataset_name,
         results=results_json,
     )
     db.add(backtest)

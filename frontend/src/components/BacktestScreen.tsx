@@ -9,7 +9,7 @@ export function BacktestScreen() {
   const [strategyId, setStrategyId] = useState('')
   const [amount, setAmount] = useState('1000')
   const [currency, setCurrency] = useState('USDT')
-  const [datasetName, setDatasetName] = useState<string | null>(null)
+  const [datasetFile, setDatasetFile] = useState<File | null>(null)
   const [stats, setStats] = useState<BacktestResult | null>(null)
   const [isRunning, setIsRunning] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
@@ -64,6 +64,10 @@ export function BacktestScreen() {
                 setErrorMessage('Choose a strategy first')
                 return
               }
+              if (!datasetFile) {
+                setErrorMessage('Attach a dataset file first')
+                return
+              }
 
               const parsedAmount = Number(amount) || 0
               setIsRunning(true)
@@ -73,7 +77,8 @@ export function BacktestScreen() {
                 strategyName: selectedStrategy.name,
                 amount: parsedAmount,
                 currency,
-                datasetName: datasetName || `manual-${new Date().toISOString()}`,
+                datasetName: datasetFile.name,
+                datasetFile,
               })
                 .then((result) => {
                   setStats(result)
@@ -126,11 +131,11 @@ export function BacktestScreen() {
                 accept=".csv,.json"
                 onChange={(event) => {
                   const file = event.target.files?.[0]
-                  setDatasetName(file?.name ?? null)
+                  setDatasetFile(file ?? null)
                 }}
               />
               <p className="field-help">
-                {datasetName ? `Selected: ${datasetName}` : 'Choose a CSV or JSON file.'}
+                {datasetFile ? `Selected: ${datasetFile.name}` : 'Choose a CSV or JSON file.'}
               </p>
             </label>
 

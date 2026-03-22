@@ -28,10 +28,11 @@ export type CreateOrUpdateBotInput = {
 
 export type BacktestRequest = {
   strategyId: number
-  strategyName: string
-  amount: number
-  currency: string
-  datasetName: string
+  strategyName?: string
+  amount?: number
+  currency?: string
+  datasetName?: string
+  datasetFile: File
 }
 
 export type BacktestResult = {
@@ -78,7 +79,8 @@ async function apiRequest<T>(
   token?: string,
 ): Promise<T> {
   const headers = new Headers(options.headers)
-  if (!headers.has('Content-Type') && options.body != null) {
+  const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData
+  if (!headers.has('Content-Type') && options.body != null && !isFormData) {
     headers.set('Content-Type', 'application/json')
   }
   if (token) {
@@ -193,24 +195,28 @@ export async function runBacktest(token: string, request: BacktestRequest): Prom
     win_rate_percent: number
   }
 
+  const formData = new FormData()
+  formData.append('strategy_id', String(request.strategyId))
+  formData.append('money_amount', String(request.amount ?? 0))
+  formData.append('money_symbol', request.currency ?? 'USDT')
+  if (request.datasetName && request.datasetName.trim().length > 0) {
+    formData.append('dataset_name', request.datasetName.trim())
+  }
+  formData.append('dataset_file', request.datasetFile)
+
   const payload = await apiRequest<RunBacktestApiResponse>(
     '/backtests/run',
     {
       method: 'POST',
-      body: JSON.stringify({
-        strategy_id: request.strategyId,
-        dataset_name: request.datasetName || `manual-${new Date().toISOString()}`,
-        money_amount: request.amount,
-        money_symbol: request.currency,
-      }),
+      body: formData,
     },
     token,
   )
 
   return {
-    overallProfitPercent: payload.overall_profit_percent,
-    meanMonthlyProfitPercent: payload.mean_monthly_profit_percent,
-    maxDrawdownPercent: payload.max_drawdown_percent,
-    winRatePercent: payload.win_rate_percent,
+    overallProfitPercent: Number(payload.overall_profit_percent),
+    meanMonthlyProfitPercent: Number(payload.mean_monthly_profit_percent),
+    maxDrawdownPercent: Number(payload.max_drawdown_percent),
+    winRatePercent: Number(payload.win_rate_percent),
   }
 }

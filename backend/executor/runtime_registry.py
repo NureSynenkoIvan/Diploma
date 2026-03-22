@@ -19,7 +19,6 @@ class RuntimeBotRecord:
     db_bot_id: int
     bot: RuntimeBot
 
-
 class StrategyFactory:
     def __init__(self) -> None:
         self._classes_by_name: dict[str, type[BaseStrategy]] = {}

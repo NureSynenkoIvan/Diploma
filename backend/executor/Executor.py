@@ -1,9 +1,10 @@
 from time import sleep
 import threading
+from backend.executor import DataProvider
 from utils.Timeframe import Timeframe
 from executor.Bot import Bot
 
-class Executor:
+class Executor(DataProvider):
     def __init__(self, bots = [], sleep_time = 1):
         self.bots = bots
         self.sleep_time = sleep_time
@@ -24,14 +25,14 @@ class Executor:
     
     def start(self):
         for bot in self.get_bots_snapshot():
-            bot.strategy.on_start()
+            bot.on_start()
     
     def stop(self):
         for bot in self.get_bots_snapshot():
-            bot.strategy.on_stop()
+            bot.on_stop()
     
     def run(self):
         while True:
             for bot in self.get_bots_snapshot():
-                bot.strategy.on_tick()
+                bot.on_tick()
             sleep(self.sleep_time)
