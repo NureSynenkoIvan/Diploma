@@ -1,3 +1,4 @@
+import pandas as pd
 
 class Requirement:
     def validate(self, strategy, bot):
@@ -12,8 +13,14 @@ class DataRequirement(Requirement):
     def validate(self, data):
         pass
 
-class MustBeCSVBinanceOHLCVData(DataRequirement):
+class MustBePandasDataFrame(DataRequirement):
     def validate(self, data):
-        # This is a placeholder implementation. In a real implementation, this would check if the data
-        # is in the correct format and contains the necessary fields for Binance OHLCV data.
-        pass
+        if not isinstance(data, pd.DataFrame):
+            raise Exception("Data must be a pandas DataFrame")
+
+class MustBeBinanceOHLCVData(DataRequirement):
+    def validate(self, data):
+        required_columns = {'timestamp', 'open', 'high', 'low', 'close', 'volume'}
+        if not required_columns.issubset(data.columns):
+            raise Exception(f"Data must contain the following columns: {required_columns}")
+        

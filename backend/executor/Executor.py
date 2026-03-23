@@ -1,11 +1,10 @@
 from time import sleep
 import threading
-from backend.executor import Context, DataProvider
 from utils.Timeframe import Timeframe
 from executor.Bot import Bot
 
-class Executor(DataProvider):
-    def __init__(self, bots = [], sleep_time = 1):
+class Executor:
+    def __init__(self, bots = list[Bot], sleep_time = 1):
         self.bots = bots
         self.sleep_time = sleep_time
         self._bots_lock = threading.Lock()
@@ -37,8 +36,3 @@ class Executor(DataProvider):
                 bot.on_tick()
             sleep(self.sleep_time)
 
-    def get_context(self, strategy) -> Context:
-        """Build a Context for the given strategy's required symbols/timeframe."""
-        # For simplicity, we return an empty context here. In a real implementation,
-        # this would fetch market data and portfolio information relevant to the strategy.
-        return Context(market_data=None, portfolio=None)

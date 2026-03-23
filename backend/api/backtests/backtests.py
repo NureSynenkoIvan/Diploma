@@ -142,42 +142,6 @@ class RunBacktestRequest(BaseModel):
     money_amount: float = 0.0
     money_symbol: str = 'USDT'
 
-
-def _parse_dataset_file(dataset_file: UploadFile) -> list[dict]:
-    filename = (dataset_file.filename or '').lower()
-    raw_bytes = dataset_file.file.read()
-
-    if not raw_bytes:
-        return []
-
-    try:
-        raw_text = raw_bytes.decode('utf-8')
-    except UnicodeDecodeError as error:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Dataset file must be UTF-8 encoded') from error
-
-    if filename.endswith('.json'):
-        try:
-            parsed = json.loads(raw_text)
-        except json.JSONDecodeError as error:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Invalid JSON dataset format') from error
-
-        if isinstance(parsed, list):
-            return [item for item in parsed if isinstance(item, dict)]
-        if isinstance(parsed, dict):
-            return [parsed]
-
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='JSON dataset must be an object or an array of objects')
-
-    if filename.endswith('.csv'):
-        try:
-            reader = csv.DictReader(StringIO(raw_text))
-            return [dict(row) for row in reader]
-        except csv.Error as error:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Invalid CSV dataset format') from error
-
-    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Only .csv and .json datasets are supported')
-
-
 class RunBacktestResponse(BaseModel):
     id: int
     strategy_id: int
@@ -207,7 +171,6 @@ def run_backtest(
     except ValueError as error:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(error))
 
-    historical_data = _parse_dataset_file(dataset_file)
     engine = BacktestEngine()
     engine_result = engine.run(runtime_strategy, historical_data, money_amount, money_symbol)
 

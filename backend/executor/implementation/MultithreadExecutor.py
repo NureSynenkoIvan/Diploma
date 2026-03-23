@@ -1,7 +1,6 @@
 
 import time
 from executor.Executor import Executor
-from backend.executor import Context, DataProvider
 from backend.strategies.Strategy import Strategy
 import concurrent.futures
 import os
@@ -15,6 +14,6 @@ class MultithreadExecutor(Executor):
     def run(self):
         while True:
             for bot in self.get_bots_snapshot():   
-                data = self.get_context(bot.strategy)             
-                self.executor.submit(bot.strategy.on_tick(data), time.time())
+                raise NotImplementedError("MultithreadExecutor run method is not fully implemented. This is a placeholder to show where concurrent execution would occur.")      
+                #self.executor.submit(bot.on_tick(data), time.time())
             time.sleep(self.sleep_time)

@@ -1,0 +1,47 @@
+import unittest
+
+from executor.backtest.BacktestResult import BacktestResult
+
+from executor.backtest.BacktestEngine import BacktestEngine  # Update 'your_module' to the actual folder
+
+# Import the specific strategy
+from strategies.implementation.RSIStrategy import RSIStrategy
+
+
+class TestBacktestEngine(unittest.TestCase):
+    def setUp(self):
+        """Set up the test environment before each test runs."""
+        self.engine = BacktestEngine()
+        self.strategy = RSIStrategy()
+        
+        # Your specific test data file
+        self.historical_data_file = r"F:\Diploma\backtest_data\binance\backtest_data_btc_usdt_1m.csv"
+        
+        self.initial_money = 1000.0
+        self.money_symbol = 'USDT'
+
+    def test_run_with_rsi_strategy(self):
+        """Test the run method using RSIStrategy and the local 1m BTC/USDT dataset."""
+        print("\n--- Starting Integration Test ---")
+        
+        # Act
+        try:
+            result = self.engine.run(
+                strategy=self.strategy,
+                historical_data_file=self.historical_data_file,
+                money_amount=self.initial_money,
+                money_symbol=self.money_symbol
+            )
+        except Exception as e:
+            self.fail(f"BacktestEngine.run() raised an unexpected exception: {e}")
+
+        # Assert
+        # 1. Ensure a BacktestResult object is returned
+        self.assertIsInstance(result, BacktestResult, "Result must be a BacktestResult object")
+        
+        # 2. Verify the strategy name carried over to the result correctly
+        self.assertEqual(result.strategy_name, self.strategy.name, "Result should map to the RSI strategy name")
+        
+
+if __name__ == '__main__':
+    unittest.main()

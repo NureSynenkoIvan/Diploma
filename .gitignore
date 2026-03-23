@@ -17,6 +17,13 @@ __pycache__/
 **/__pycache__/
 *.py[cod]
 
+# Environment variables
+.env
+.env.local
+
+# Backtest data (can be large and regenerated)
+backtest
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

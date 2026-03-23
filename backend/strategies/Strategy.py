@@ -1,5 +1,6 @@
 from utils.Timeframe import Timeframe
 from executor.Context import Context
+from strategies.rules.strategy_requirements import Requirement, DataRequirement
 
 class Strategy:
     def __init__(self, 
@@ -11,8 +12,8 @@ class Strategy:
         self.description = description
         self.required_symbols = required_symbols
         self.timeframe = timeframe
-        self.requirements = []
-        self.data_requirements = []
+        self.requirements : list[Requirement] = []
+        self.data_requirements : list[DataRequirement] = []
 
     def validate(self, bot):
         for requirement in self.requirements:
