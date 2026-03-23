@@ -18,9 +18,3 @@ class MultithreadExecutor(Executor):
                 data = self.get_context(bot.strategy)             
                 self.executor.submit(bot.strategy.on_tick(data), time.time())
             time.sleep(self.sleep_time)
-
-    def get_context(self, strategy) -> Context:
-        """Build a Context for the given strategy's required symbols/timeframe."""
-        # For simplicity, we return an empty context here. In a real implementation,
-        # this would fetch market data and portfolio information relevant to the strategy.
-        return Context(market_data=None, portfolio=None)
