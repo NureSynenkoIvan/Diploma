@@ -13,6 +13,8 @@ class PandasBacktestDataProvider(MarketDataProvider):
         """Build a  for the given strategy's required symbols/timeframe."""
         self.historical_data = pd.read_csv(historical_data_file)
         strategy.validate_data_requirements(self.historical_data)
+        self.first_row = self.historical_data.iloc[0]
+        self.last_row = self.historical_data.iloc[-1]
 
     def get_market_data(self, strategy : Strategy):
         #returns next row of historical data as a Context object
@@ -21,4 +23,5 @@ class PandasBacktestDataProvider(MarketDataProvider):
         row = self.historical_data.iloc[0]
         self.historical_data = self.historical_data.iloc[1:]
         return row
+
 

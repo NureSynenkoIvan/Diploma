@@ -1,6 +1,7 @@
 from utils.Timeframe import Timeframe
 from executor.Context import Context
 from strategies.rules.strategy_requirements import Requirement, DataRequirement
+import inspect
 
 class Strategy:
     def __init__(self, 
@@ -31,3 +32,4 @@ class Strategy:
     
     def on_stop(self, context : Context):
         pass
+

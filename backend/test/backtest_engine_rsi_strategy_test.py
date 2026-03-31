@@ -16,7 +16,7 @@ class TestBacktestEngine(unittest.TestCase):
         self.strategy = RSIStrategy(symbol="BTCUSDT", timeframe=Timeframe.ONE_MINUTE)
         
         # Your specific test data file
-        self.historical_data_file = r"F:\Diploma\backtest_data\binance\backtest_data_btc_usdt_1m.csv"
+        self.historical_data_file = r"F:\Diploma\backend\data\backtest_data\binance\backtest_data_btc_usdt_2026-02-01_00-00-00_2026-03-01_00-00-00_1m.csv"
         
         self.initial_money = 1000.0
         self.money_symbol = 'USDT'
@@ -33,6 +33,8 @@ class TestBacktestEngine(unittest.TestCase):
                 money_amount=self.initial_money,
                 money_symbol=self.money_symbol
             )
+
+            print(result)
         except Exception as e:
             self.fail(f"BacktestEngine.run() raised an unexpected exception: {e}")
 

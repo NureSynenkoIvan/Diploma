@@ -14,7 +14,7 @@ class BacktestEngine :
     def __init__(self):
         print("Backtest engine initialized")
 
-    def run(self, strategy : Strategy, historical_data_file, money_amount=0.0, money_symbol='USDT') -> BacktestResult:
+    def run(self, strategy : Strategy, historical_data_file, money_amount=0.0, money_symbol='USDT', log_process=False) -> BacktestResult:
         portfolio_provider = self.build_portfolio_provider(strategy)
 
         data_provider = self.load_historical_data(strategy, historical_data_file)
@@ -22,30 +22,31 @@ class BacktestEngine :
         bot = Bot(name="name",
                   strategy=strategy,
                   symbols=[],
-                  execution_engine=BacktestExecutionEngine(),
+                  execution_engine=BacktestExecutionEngine(log_process),
                   regime='backtest',
                   portfolio_provider=portfolio_provider)
 
 
         print(f"Running backtest for strategy '{strategy.name}' w")
         print(f"Initial money: {money_amount} {money_symbol}")
-        result = BacktestResult(strategy.name)
 
-        self.execute_backtest(bot, data_provider)
+        result = self.execute_backtest(bot, data_provider)
 
         print("Backtest run completed")
         return result
 
     def execute_backtest(self, bot : Bot, data_provider : MarketDataProvider) -> BacktestResult:
-        bot.on_start()
-
         data = data_provider.get_market_data(bot.strategy)
+
+        bot.on_start(data)
+
+
         while data is not None:
             bot.on_tick(data)
 
             data = data_provider.get_market_data(bot.strategy)
 
-        bot.on_stop()
+        bot.on_stop(data)
         result = self.calculate_results(bot)
         return result
 
@@ -60,9 +61,9 @@ class BacktestEngine :
     def calculate_results(self, bot : Bot) -> BacktestResult:
         # This is a placeholder implementation. In a real implementation, this would calculate the backtest results
         # based on the final state of the portfolio and the historical data.
-        result = BacktestResult(bot.strategy.symbol)
+        result = BacktestResult(bot.strategy.name)
 
-        portfolio = bot.portfolio_provider.get_portfolio()
+        portfolio = bot.portfolio_provider.get_portfolio(bot.strategy)
         engine = bot.execution_engine
 
         trades = np.array(engine.trade_history)
@@ -73,7 +74,10 @@ class BacktestEngine :
 
 
             initial_balance = portfolio.initial_base_token_amount
+            result.initial_amount = initial_balance
+
             total_pnl = np.sum(trades)
+            result.final_amount = initial_balance + total_pnl
             result.overall_profit_percent = (total_pnl / initial_balance) * 100
 
         return result

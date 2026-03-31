@@ -20,6 +20,8 @@ class Bot:
         self.regime = regime
         self.portfolio_provider = portfolio_provider
 
+        self.startingPosition
+
         strategy.validate(self)
 
     def on_tick(self, market_data):
@@ -35,10 +37,10 @@ class Bot:
             if result.success:
                 self.portfolio_provider.apply(order)
 
-    def on_start(self):
-        ctx = Context(None, self.portfolio_provider.get_portfolio(self))
+    def on_start(self, data=None):
+        ctx = Context(data, self.portfolio_provider.get_portfolio(self))
         self.strategy.on_start(ctx)
 
-    def on_stop(self):
-        ctx = Context(None, self.portfolio_provider.get_portfolio(self))
+    def on_stop(self, data=None):
+        ctx = Context(data, self.portfolio_provider.get_portfolio(self))
         self.strategy.on_stop(ctx)
