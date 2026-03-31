@@ -6,13 +6,14 @@ from executor.backtest.BacktestEngine import BacktestEngine  # Update 'your_modu
 
 # Import the specific strategy
 from strategies.implementation.RSIStrategy import RSIStrategy
+from utils.Timeframe import Timeframe
 
 
 class TestBacktestEngine(unittest.TestCase):
     def setUp(self):
         """Set up the test environment before each test runs."""
         self.engine = BacktestEngine()
-        self.strategy = RSIStrategy()
+        self.strategy = RSIStrategy(symbol="BTCUSDT", timeframe=Timeframe.ONE_MINUTE)
         
         # Your specific test data file
         self.historical_data_file = r"F:\Diploma\backtest_data\binance\backtest_data_btc_usdt_1m.csv"

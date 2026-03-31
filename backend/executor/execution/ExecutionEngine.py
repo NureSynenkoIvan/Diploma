@@ -1,3 +1,7 @@
+import logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
 class ExecutionEngine:
     def __init__(self):
         pass
@@ -19,9 +23,9 @@ class BacktestExecutionEngine(ExecutionEngine):
         print("Backtest execution engine initialized")
 
     def execute(self, order):
-        """Execute a single tick for the given bot."""
-        # In a backtest, we would simulate order execution based on historical data.
-        # For simplicity, we assume all orders are executed successfully at the next tick's price.
+        """Execute a single tick and log the order details."""
+
+        logger.info(f"RECEIVED ORDER: {order.side.upper()} {order.quantity} {order.symbol} @ {order.price or 'Market'}")
         return ExecutionResult(success=True, order=order)
     
 
@@ -35,6 +39,5 @@ class BinanceExecutionEngine(ExecutionEngine):
     def execute(self, order):
         """Execute the given order on Binance."""
         # Here we would implement the logic to send the order to Binance's API and handle the response.
-        # For simplicity, we will just return a successful execution result.
         raise NotImplementedError("Binance execution logic not implemented yet.")
 

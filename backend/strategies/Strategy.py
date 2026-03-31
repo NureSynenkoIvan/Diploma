@@ -23,11 +23,11 @@ class Strategy:
         for requirement in self.data_requirements:
             requirement.validate(historical_data)
 
-    def on_start(self):
+    def on_start(self, context : Context):
         pass
 
     def on_tick(self, context : Context):
         pass
     
-    def on_stop(self):
+    def on_stop(self, context : Context):
         pass

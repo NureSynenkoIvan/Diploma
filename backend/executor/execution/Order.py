@@ -1,5 +1,5 @@
 class Order:
-    def __init__(self, symbol, quantity, price=None, side='buy', order_type='market'):
+    def __init__(self, symbol, quantity=0.0, price=None, side='buy', order_type='market'):
         self.symbol = symbol
         self.quantity = quantity
         self.price = price

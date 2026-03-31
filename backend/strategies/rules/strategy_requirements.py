@@ -18,9 +18,17 @@ class MustBePandasDataFrame(DataRequirement):
         if not isinstance(data, pd.DataFrame):
             raise Exception("Data must be a pandas DataFrame")
 
-class MustBeBinanceOHLCVData(DataRequirement):
+class MustHaveColumns(DataRequirement):
+    def __init__(self, columns: set):
+        self.required_columns = columns
+
     def validate(self, data):
-        required_columns = {'timestamp', 'open', 'high', 'low', 'close', 'volume'}
-        if not required_columns.issubset(data.columns):
-            raise Exception(f"Data must contain the following columns: {required_columns}")
+        if not self.required_columns.issubset(data.columns):
+            raise Exception(f"Data must contain the following columns: {self.required_columns}")
+
+class MustBeBinanceOHLCVData(MustHaveColumns):
+    def __init__(self):
+        super().__init__({'Open Time', 'Open', 'High', 'Low', 'Close', 'Volume'})
+
+
         

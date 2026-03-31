@@ -1,9 +1,10 @@
+import time
 
-from backend.executor.execution.ExecutionEngine import ExecutionEngine
-from backend.strategies.Strategy import Strategy
-from executor.portfolio.PortfolioProvider import PortfolioProvider
+from executor.execution.ExecutionEngine import ExecutionEngine
+from strategies.Strategy import Strategy
+from executor.Context import Context
+from executor.execution.Signal import Signal
 
-from . import Context
 class Bot:
     def __init__(self, 
                  name, 
@@ -21,20 +22,23 @@ class Bot:
 
         strategy.validate(self)
 
-    async def on_tick(self, market_data):
-        ctx = Context(market_data, self.portfolio_provider.get_portfolio())
+    def on_tick(self, market_data):
+        portfolio = self.portfolio_provider.get_portfolio(self)
+
+        ctx = Context(market_data, portfolio)
 
         signals = self.strategy.on_tick(ctx)
 
         for signal in signals:
             order = signal.to_order()
-            result = await self.execution_engine.execute(order)
-            self.portfolio_provider.apply(order, result)
+            result = self.execution_engine.execute(order)
+            if result.success:
+                self.portfolio_provider.apply(order)
 
-    async def on_start(self):
-        ctx = Context(None, self.portfolio_provider.get_portfolio())
-        await self.strategy.on_start(ctx)
-    
-    async def on_stop(self):
-        ctx = Context(None, self.portfolio_provider.get_portfolio())
-        await self.strategy.on_stop(ctx)
+    def on_start(self):
+        ctx = Context(None, self.portfolio_provider.get_portfolio(self))
+        self.strategy.on_start(ctx)
+
+    def on_stop(self):
+        ctx = Context(None, self.portfolio_provider.get_portfolio(self))
+        self.strategy.on_stop(ctx)
