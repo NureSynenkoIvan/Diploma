@@ -7,7 +7,7 @@ from executor.Context import Context
 from executor.portfolio.PortfolioProvider import BacktestPortfolioProvider, PortfolioProvider
 from data.DataProvider import MarketDataProvider, PandasBacktestDataProvider
 
-import io
+import numpy as np
 
 
 class BacktestEngine :
@@ -60,8 +60,22 @@ class BacktestEngine :
     def calculate_results(self, bot : Bot) -> BacktestResult:
         # This is a placeholder implementation. In a real implementation, this would calculate the backtest results
         # based on the final state of the portfolio and the historical data.
-        portfolio = bot.portfolio_provider.get_portfolio()
+        result = BacktestResult(bot.strategy.symbol)
 
-        execution_engine = bot.execution_engine
+        portfolio = bot.portfolio_provider.get_portfolio()
+        engine = bot.execution_engine
+
+        trades = np.array(engine.trade_history)
+
+        if len(trades) > 0:
+            wins = trades[trades > 0]
+            result.win_rate_percent = (len(wins) / len(trades)) * 100
+
+
+            initial_balance = portfolio.initial_base_token_amount
+            total_pnl = np.sum(trades)
+            result.overall_profit_percent = (total_pnl / initial_balance) * 100
+
+        return result
 
 

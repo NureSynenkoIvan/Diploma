@@ -20,12 +20,45 @@ class ExecutionResult:
 class BacktestExecutionEngine(ExecutionEngine):
     def __init__(self):
         super().__init__()
-        print("Backtest execution engine initialized")
+        self.trade_history = []  # List of closed trade PnLs: [50.5, -20.0, ...]
+        self.open_positions = {}  # Tracks {symbol: {'price': float, 'qty': float, 'side': str}}
+        logger.info("Backtest execution engine initialized with trade tracking.")
 
     def execute(self, order):
-        """Execute a single tick and log the order details."""
+        """Simulate execution and record trade performance."""
+        symbol = order.symbol
 
-        logger.info(f"RECEIVED ORDER: {order.side.upper()} {order.quantity} {order.symbol} @ {order.price or 'Market'}")
+        if symbol in self.open_positions:
+            prev_order = self.open_positions[symbol]
+
+            if prev_order['side'] != order.side:
+                # Calculate PnL: (Exit Price - Entry Price) * Quantity
+                # Note: This logic assumes 'Buy Low, Sell High'
+                entry_price = prev_order['price']
+                exit_price = order.price
+
+                if prev_order['side'] == 'buy':
+                    pnl = (exit_price - entry_price) * order.quantity
+                else:  # shorting logic
+                    pnl = (entry_price - exit_price) * order.quantity
+
+                self.trade_history.append(pnl)
+                logging.info(f"TRADE CLOSED: {symbol} | PnL: {pnl:.2f}")
+
+                # Remove from open positions
+                del self.open_positions[symbol]
+            else:
+                # Logic for adding to an existing position could go here
+                pass
+        else:
+            # 2. Open a new position
+            self.open_positions[symbol] = {
+                'price': order.price,
+                'quantity': order.quantity,
+                'side': order.side
+            }
+            logging.info(f"TRADE OPENED: {order.side.upper()} {symbol} at {order.price}")
+
         return ExecutionResult(success=True, order=order)
     
 

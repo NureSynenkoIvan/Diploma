@@ -4,6 +4,7 @@ from executor.portfolio.Position import Position
 
 class Portfolio:
     def __init__(self, base_token_amount=0.0, base_token_symbol='USDT', positions=None):
+        self.initial_base_token_amount = base_token_amount
         self.base_token_amount = base_token_amount
         self.base_token_symbol = base_token_symbol
         self.positions = positions if positions is not None else []
