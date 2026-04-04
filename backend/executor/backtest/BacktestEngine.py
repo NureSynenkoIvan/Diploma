@@ -1,9 +1,7 @@
-from data import DataProvider
 from executor.backtest.BacktestResult import BacktestResult
 from executor.execution.ExecutionEngine import BacktestExecutionEngine
 from executor.Bot import Bot
 from strategies.Strategy import Strategy
-from executor.Context import Context
 from executor.portfolio.PortfolioProvider import BacktestPortfolioProvider, PortfolioProvider
 from data.DataProvider import MarketDataProvider, PandasBacktestDataProvider
 

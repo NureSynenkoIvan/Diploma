@@ -6,6 +6,16 @@ export type StrategySummary = {
   timeframe: string
 }
 
+export type StrategyParameterSchema = {
+  key: string
+  label: string
+  type: 'int' | 'float' | 'string' | 'bool'
+  default: number | string | boolean | null
+  min?: number | null
+  max?: number | null
+  options?: string[]
+}
+
 export type TradingBot = {
   id: number
   name: string
@@ -33,6 +43,7 @@ export type BacktestRequest = {
   currency?: string
   datasetName?: string
   datasetFile: File
+  parameters?: Record<string, unknown>
 }
 
 export type BacktestResult = {
@@ -124,6 +135,13 @@ export async function fetchStrategies(token: string): Promise<StrategySummary[]>
   return apiRequest<StrategySummary[]>('/strategies', { method: 'GET' }, token)
 }
 
+export async function fetchStrategyParameters(
+  token: string,
+  strategyId: number,
+): Promise<StrategyParameterSchema[]> {
+  return apiRequest<StrategyParameterSchema[]>(`/strategies/${strategyId}/parameters`, { method: 'GET' }, token)
+}
+
 function mapApiBot(bot: ApiBot): TradingBot {
   return {
     id: bot.id,
@@ -201,6 +219,9 @@ export async function runBacktest(token: string, request: BacktestRequest): Prom
   formData.append('money_symbol', request.currency ?? 'USDT')
   if (request.datasetName && request.datasetName.trim().length > 0) {
     formData.append('dataset_name', request.datasetName.trim())
+  }
+  if (request.parameters && Object.keys(request.parameters).length > 0) {
+    formData.append('parameters', JSON.stringify(request.parameters))
   }
   formData.append('dataset_file', request.datasetFile)
 

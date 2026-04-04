@@ -33,3 +33,18 @@ class Strategy:
     def on_stop(self, context : Context):
         pass
 
+    def get_parameters_schema(self):
+        sig = inspect.signature(self.__init__)
+        skip = {'self', 'symbol', 'timeframe'}
+        params = []
+        for name, p in sig.parameters.items():
+            if name in skip:
+                continue
+            default = p.default if p.default is not inspect.Parameter.empty else None
+            params.append({
+                "key": name,
+                "label": name.replace('_', ' ').title(),
+                "type": "float" if isinstance(default, float) else "int",
+                "default": default,
+            })
+        return params

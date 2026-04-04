@@ -1,18 +1,106 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import type { BacktestResult, StrategySummary } from '../services/api'
-import { fetchStrategies, runBacktest } from '../services/api'
+import type { BacktestResult, StrategyParameterSchema, StrategySummary } from '../services/api'
+import { fetchStrategies, fetchStrategyParameters, runBacktest } from '../services/api'
+
+function getParameterDefaultValue(param: StrategyParameterSchema): unknown {
+  if (param.options && param.options.length > 0) {
+    if (typeof param.default === 'string' && param.options.includes(param.default)) {
+      return param.default
+    }
+
+    return param.options[0]
+  }
+
+  if (param.type === 'bool') {
+    return typeof param.default === 'boolean' ? param.default : false
+  }
+
+  if (param.type === 'string') {
+    return typeof param.default === 'string' ? param.default : ''
+  }
+
+  return typeof param.default === 'number' && Number.isFinite(param.default) ? param.default : ''
+}
+
+function buildParameterValues(schema: StrategyParameterSchema[]): Record<string, unknown> {
+  return schema.reduce<Record<string, unknown>>((values, param) => {
+    values[param.key] = getParameterDefaultValue(param)
+    return values
+  }, {})
+}
+
+function StrategyParamsForm({
+  schema,
+  values,
+  onChange,
+}: {
+  schema: StrategyParameterSchema[]
+  values: Record<string, unknown>
+  onChange: (key: string, value: unknown) => void
+}) {
+  return (
+    <>
+      {schema.map((param) => (
+        <label key={param.key} className="field">
+          <span className="field-label">{param.label}</span>
+          {param.type === 'bool' ? (
+            <input
+              type="checkbox"
+              checked={Boolean(values[param.key] ?? getParameterDefaultValue(param))}
+              onChange={(event) => onChange(param.key, event.target.checked)}
+            />
+          ) : param.options ? (
+            <select
+              value={String(values[param.key] ?? getParameterDefaultValue(param) ?? '')}
+              onChange={(event) => onChange(param.key, event.target.value)}
+            >
+              {param.options.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          ) : param.type === 'string' ? (
+            <input
+              type="text"
+              value={String(values[param.key] ?? getParameterDefaultValue(param) ?? '')}
+              onChange={(event) => onChange(param.key, event.target.value)}
+            />
+          ) : (
+            <input
+              type="number"
+              min={param.min ?? undefined}
+              max={param.max ?? undefined}
+              step={param.type === 'float' ? '0.01' : 1}
+              value={String(values[param.key] ?? getParameterDefaultValue(param) ?? '')}
+              onChange={(event) => {
+                const rawValue = event.target.value
+                const nextValue = param.type === 'int' ? Number.parseInt(rawValue, 10) : Number(rawValue)
+                onChange(param.key, Number.isNaN(nextValue) ? 0 : nextValue)
+              }}
+            />
+          )}
+        </label>
+      ))}
+    </>
+  )
+}
 
 export function BacktestScreen() {
   const { token } = useAuth()
   const [strategies, setStrategies] = useState<StrategySummary[]>([])
   const [strategyId, setStrategyId] = useState('')
+  const [parameterSchema, setParameterSchema] = useState<StrategyParameterSchema[]>([])
+  const [parameterValues, setParameterValues] = useState<Record<string, unknown>>({})
   const [amount, setAmount] = useState('1000')
   const [currency, setCurrency] = useState('USDT')
   const [datasetFile, setDatasetFile] = useState<File | null>(null)
   const [stats, setStats] = useState<BacktestResult | null>(null)
   const [isRunning, setIsRunning] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
+  const [parameterErrorMessage, setParameterErrorMessage] = useState('')
+  const [isLoadingParameters, setIsLoadingParameters] = useState(false)
 
   useEffect(() => {
     if (!token) {
@@ -26,7 +114,13 @@ export function BacktestScreen() {
           return
         }
         setStrategies(data)
-        setStrategyId(String(data[0]?.id ?? ''))
+        setStrategyId((currentStrategyId) => {
+          if (currentStrategyId && data.some((strategy) => String(strategy.id) === currentStrategyId)) {
+            return currentStrategyId
+          }
+
+          return String(data[0]?.id ?? '')
+        })
       })
       .catch((error) => {
         if (!isMounted) {
@@ -40,6 +134,49 @@ export function BacktestScreen() {
       isMounted = false
     }
   }, [token])
+
+  useEffect(() => {
+    if (!token || !strategyId) {
+      setParameterSchema([])
+      setParameterValues({})
+      setParameterErrorMessage('')
+      setIsLoadingParameters(false)
+      return
+    }
+
+    let isMounted = true
+    setIsLoadingParameters(true)
+    setParameterErrorMessage('')
+
+    void fetchStrategyParameters(token, Number(strategyId))
+      .then((schema) => {
+        if (!isMounted) {
+          return
+        }
+
+        setParameterSchema(schema)
+        setParameterValues(buildParameterValues(schema))
+      })
+      .catch((error) => {
+        if (!isMounted) {
+          return
+        }
+
+        const message = error instanceof Error ? error.message : 'Failed to load strategy parameters'
+        setParameterSchema([])
+        setParameterValues({})
+        setParameterErrorMessage(message)
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsLoadingParameters(false)
+        }
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [token, strategyId])
 
   return (
     <section aria-labelledby="backtest-heading" className="page">
@@ -79,6 +216,7 @@ export function BacktestScreen() {
                 currency,
                 datasetName: datasetFile.name,
                 datasetFile,
+                parameters: parameterValues,
               })
                 .then((result) => {
                   setStats(result)
@@ -102,6 +240,29 @@ export function BacktestScreen() {
                 ))}
               </select>
             </label>
+
+            <div className="field">
+              <span className="field-label">Parameters</span>
+              {isLoadingParameters ? (
+                <p className="field-help">Loading strategy parameters...</p>
+              ) : parameterSchema.length > 0 ? (
+                <StrategyParamsForm
+                  schema={parameterSchema}
+                  values={parameterValues}
+                  onChange={(key, value) => {
+                    setParameterValues((currentValues) => ({
+                      ...currentValues,
+                      [key]: value,
+                    }))
+                  }}
+                />
+              ) : (
+                <p className="field-help">
+                  No configurable parameters are exposed for this strategy.
+                </p>
+              )}
+              {parameterErrorMessage ? <p className="field-help field-help--error">{parameterErrorMessage}</p> : null}
+            </div>
 
             <div className="field field--inline">
               <div className="field field--flex">
