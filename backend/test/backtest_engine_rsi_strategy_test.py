@@ -1,12 +1,12 @@
 import unittest
 
-from executor.backtest.BacktestResult import BacktestResult
+from app.executor import BacktestResult
 
-from executor.backtest.BacktestEngine import BacktestEngine  # Update 'your_module' to the actual folder
+from app.executor.backtest.BacktestEngine import BacktestEngine  # Update 'your_module' to the actual folder
 
 # Import the specific strategy
-from strategies.implementation.RSIStrategy import RSIStrategy
-from utils.timeframe import Timeframe
+from app.strategies.implementation.RSIStrategy import RSIStrategy
+from app.utils.timeframe import Timeframe
 
 
 class TestBacktestEngine(unittest.TestCase):
@@ -16,7 +16,7 @@ class TestBacktestEngine(unittest.TestCase):
         self.strategy = RSIStrategy(symbol="BTCUSDT", timeframe=Timeframe.ONE_MINUTE)
         
         # Your specific test data file
-        self.historical_data_file = r"F:\Diploma\backend\data\backtest_data\binance\backtest_data_btc_usdt_2026-02-01_00-00-00_2026-03-01_00-00-00_1m.csv"
+        self.historical_data_file = r"/app/data\backtest_data\binance\backtest_data_btc_usdt_2026-02-01_00-00-00_2026-03-01_00-00-00_1m.csv"
         
         self.initial_money = 1000.0
         self.money_symbol = 'USDT'

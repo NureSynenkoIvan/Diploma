@@ -3,14 +3,14 @@ import os
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.auth import require_auth, router as auth_router
-from api.backtests.backtests import router as backtests_router
-from api.bots.bots import router as bots_router
-from api.strategies.strategies import router as strategies_router
-from api.users.users import router as users_router
-from db.seed import seed_defaults
-from executor.implementation.MultithreadExecutor import MultithreadExecutor
-from executor.runtime_registry import BotRuntimeRegistry
+from app.api.auth import require_auth, router as auth_router
+from app.api.backtests.backtests import router as backtests_router
+from app.api.bots.bots import router as bots_router
+from app.api.strategies.strategies import router as strategies_router
+from app.api.users.users import router as users_router
+from app.database.seed import seed_defaults
+from app.executor.implementation.MultithreadExecutor import MultithreadExecutor
+from app.executor.runtime_registry import BotRuntimeRegistry
 
 
 
