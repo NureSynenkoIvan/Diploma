@@ -2,7 +2,6 @@ export type StrategySummary = {
   id: number
   name: string
   description: string | null
-  symbols_required: number
   timeframe: string
 }
 

@@ -39,14 +39,6 @@ def _iter_strategy_instances() -> list[BaseStrategy]:
     return strategy_instances
 
 
-def _symbols_required(value: object) -> int:
-    if isinstance(value, int):
-        return value
-    if isinstance(value, (list, tuple, set)):
-        return len(value)
-    return 1
-
-
 def _timeframe_value(value: object) -> str:
     if hasattr(value, "name"):
         return str(value.name)
@@ -67,17 +59,13 @@ def seed_defaults() -> None:
                 db.execute(select(StrategyModel).where(StrategyModel.name == strategy.name)).scalar_one_or_none()
             )
             if existing_strategy is not None:
-                existing_strategy.description = strategy.description
-                existing_strategy.symbols_required = _symbols_required(strategy.required_symbols)
-                existing_strategy.timeframe = _timeframe_value(strategy.timeframe)
+               
                 continue
 
             db.add(
                 StrategyModel(
                     name=strategy.name,
-                    description=strategy.description,
-                    symbols_required=_symbols_required(strategy.required_symbols),
-                    timeframe=_timeframe_value(strategy.timeframe),
+                    description=strategy.description
                 )
             )
 

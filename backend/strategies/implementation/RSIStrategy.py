@@ -1,5 +1,6 @@
 from collections import deque
 
+from utils.timeframe import Timeframe
 from executor.execution.Signal import Signal, SimpleSignal
 from strategies.Strategy import Strategy
 
@@ -10,11 +11,11 @@ from strategies.rules.strategy_requirements import MustBePandasDataFrame, MustBe
 
 class RSIStrategy(Strategy):
     """Default values were gotten from Backtests.ipynb"""
-    def __init__(self, symbol, timeframe, rsi_period=8, overbought_threshold=62, oversold_threshold=36):
+    def __init__(self, symbol="BTC/USDT", timeframe=Timeframe.ONE_MINUTE, rsi_period=8, overbought_threshold=62, oversold_threshold=36):
         super().__init__("RSIStrategy",
-                         "Simple RSI strategy",
-                         [symbol],
-                         timeframe)
+                         "Simple RSI strategy")
+        self.required_symbols = [symbol]
+        self.timeframe = timeframe
         self.rsi_period = rsi_period
         self.overbought_threshold = overbought_threshold
         self.oversold_threshold = oversold_threshold
@@ -55,7 +56,7 @@ class RSIStrategy(Strategy):
 
 class NPositionsRSIStrategy(RSIStrategy):
     """Regular RSI is better. See ..\\notebooks\\Backtests.ipynb"""
-    def __init__(self, symbol, timeframe, rsi_period=8, overbought_threshold=70, oversold_threshold=35, max_positions=10):
+    def __init__(self, symbol="BTC/USDT", timeframe=Timeframe.ONE_MINUTE, rsi_period=8, overbought_threshold=70, oversold_threshold=35, max_positions=10):
         super().__init__(symbol, timeframe, rsi_period, overbought_threshold, oversold_threshold)
         self.name="1/N Positions RSI"
         self.max_positions = max_positions

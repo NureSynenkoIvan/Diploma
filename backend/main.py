@@ -12,6 +12,8 @@ from db.seed import seed_defaults
 from executor.implementation.MultithreadExecutor import MultithreadExecutor
 from executor.runtime_registry import BotRuntimeRegistry
 
+
+
 def init_bot_runtime_registry() -> BotRuntimeRegistry:
     executor = MultithreadExecutor()
     registry = BotRuntimeRegistry(executor)

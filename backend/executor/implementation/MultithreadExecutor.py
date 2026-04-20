@@ -1,7 +1,6 @@
 
 import time
 from executor.Executor import Executor
-from backend.strategies.Strategy import Strategy
 import concurrent.futures
 import os
 

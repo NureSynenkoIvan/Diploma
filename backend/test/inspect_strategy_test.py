@@ -3,14 +3,14 @@ import unittest
 from sqlalchemy import true
 
 from strategies.implementation.RSIStrategy import RSIStrategy
-import utils.Timeframe
+import utils.timeframe
 
 
 class TestInspectStrategy(unittest.TestCase):
 
 
     def test_inspect_strategy(self):
-        strategy = RSIStrategy(symbol="BTC/USCT", timeframe=utils.Timeframe.Timeframe.ONE_MINUTE, rsi_period=8, overbought_threshold=62, oversold_threshold=36)
+        strategy = RSIStrategy(symbol="BTC/USCT", timeframe=utils.timeframe.Timeframe.ONE_MINUTE, rsi_period=8, overbought_threshold=62, oversold_threshold=36)
         output = strategy.get_parameters_schema()
         assert(output is not None)
         assert (self.find_strategy_parameter_in_schema("rsi_period", output))

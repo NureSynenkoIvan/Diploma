@@ -4,7 +4,6 @@ from executor.Bot import Bot
 from strategies.Strategy import Strategy
 from executor.portfolio.PortfolioProvider import BacktestPortfolioProvider, PortfolioProvider
 from data.DataProvider import MarketDataProvider, PandasBacktestDataProvider
-
 import numpy as np
 
 
@@ -48,17 +47,16 @@ class BacktestEngine :
         result = self.calculate_results(bot)
         return result
 
+    def optimise(self, strategy : Strategy):
+        pass
 
     def load_historical_data(self, strategy : Strategy, dataset_file) -> MarketDataProvider:
-        # Currently only supports CSV files, but can be extended to support other formats or data sources
         return PandasBacktestDataProvider(strategy, dataset_file)
 
     def build_portfolio_provider(self, strategy, quantity=1000.0) -> PortfolioProvider:
         return BacktestPortfolioProvider(quantity=quantity)
 
     def calculate_results(self, bot : Bot) -> BacktestResult:
-        # This is a placeholder implementation. In a real implementation, this would calculate the backtest results
-        # based on the final state of the portfolio and the historical data.
         result = BacktestResult(bot.strategy.name)
 
         portfolio = bot.portfolio_provider.get_portfolio(bot.strategy)

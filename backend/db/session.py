@@ -4,18 +4,15 @@ import os
 from contextlib import contextmanager
 from typing import Iterator
 
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 
-def _sqlite_url() -> str:
-    return os.getenv("DATABASE_URL", "sqlite:///./app.db")
+def _database_url() -> str:
+    return os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/app")
 
 
-engine = create_engine(
-    _sqlite_url(),
-    connect_args={"check_same_thread": False},
-)
+engine = create_engine(_database_url())
 
 
 class Base(DeclarativeBase):
@@ -26,22 +23,9 @@ SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, clas
 
 
 def init_db() -> None:
-    # Import models so metadata is populated
     from db import models  # noqa: F401
 
     Base.metadata.create_all(bind=engine)
-
-    # Keep SQLite schema in sync for environments without migrations.
-    if engine.dialect.name == "sqlite":
-        with engine.begin() as connection:
-            columns = connection.execute(text("PRAGMA table_info(bots)"))
-            column_names = {str(row[1]) for row in columns}
-            if "additional_info" not in column_names:
-                connection.execute(text("ALTER TABLE bots ADD COLUMN additional_info TEXT"))
-            if "money_amount" not in column_names:
-                connection.execute(text("ALTER TABLE bots ADD COLUMN money_amount REAL"))
-            if "money_symbol" not in column_names:
-                connection.execute(text("ALTER TABLE bots ADD COLUMN money_symbol TEXT"))
 
 
 def get_db() -> Iterator[Session]:

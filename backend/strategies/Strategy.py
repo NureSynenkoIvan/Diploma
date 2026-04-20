@@ -1,4 +1,4 @@
-from utils.Timeframe import Timeframe
+from utils.timeframe import Timeframe
 from executor.Context import Context
 from strategies.rules.strategy_requirements import Requirement, DataRequirement
 import inspect
@@ -6,13 +6,9 @@ import inspect
 class Strategy:
     def __init__(self, 
                  name, 
-                 description, 
-                 required_symbols=[], 
-                 timeframe=Timeframe.ONE_SECOND):
+                 description):
         self.name = name
         self.description = description
-        self.required_symbols = required_symbols
-        self.timeframe = timeframe
         self.requirements : list[Requirement] = []
         self.data_requirements : list[DataRequirement] = []
 
@@ -33,9 +29,10 @@ class Strategy:
     def on_stop(self, context : Context):
         pass
 
+    @classmethod
     def get_parameters_schema(self):
         sig = inspect.signature(self.__init__)
-        skip = {'self', 'symbol', 'timeframe'}
+        skip = {'self'}
         params = []
         for name, p in sig.parameters.items():
             if name in skip:

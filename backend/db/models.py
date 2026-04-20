@@ -24,8 +24,6 @@ class Strategy(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(200), unique=True, index=True, nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    symbols_required: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
-    timeframe: Mapped[str] = mapped_column(String(64), nullable=False, default="ONE_SECOND")
 
     bots: Mapped[List["Bot"]] = relationship(back_populates="strategy", cascade="all, delete-orphan")
     backtests: Mapped[List["BacktestResult"]] = relationship(

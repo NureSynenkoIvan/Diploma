@@ -22,17 +22,8 @@ const DEFAULT_FORM: BotFormState = {
   wallet: '',
 }
 
-function getRequiredSymbolCount(strategies: StrategySummary[], strategyId: string): number {
-  const required = strategies.find((strategy) => String(strategy.id) === strategyId)?.symbols_required ?? 1
-  return Math.max(1, required)
-}
-
-function normalizeSymbols(values: string[], requiredCount: number): string[] {
-  const next = values.slice(0, requiredCount)
-  while (next.length < requiredCount) {
-    next.push('')
-  }
-  return next
+function normalizeSymbols(values: string[]): string[] {
+  return values.map((value) => value.trim()).filter(Boolean)
 }
 
 export function BotsScreen() {
@@ -92,23 +83,21 @@ export function BotsScreen() {
 
   const handleAdd = () => {
     const strategyId = String(strategies[0]?.id ?? '')
-    const requiredCount = getRequiredSymbolCount(strategies, strategyId)
     setFormState({
       ...DEFAULT_FORM,
       strategyId,
-      symbols: normalizeSymbols([], requiredCount),
+      symbols: [''],
     })
     setIsDialogOpen(true)
   }
 
   const handleEdit = (bot: TradingBot) => {
     const strategyId = String(bot.strategyId)
-    const requiredCount = getRequiredSymbolCount(strategies, strategyId)
     setFormState({
       id: bot.id,
       name: bot.name,
       strategyId,
-      symbols: normalizeSymbols(bot.symbols, requiredCount),
+      symbols: bot.symbols.length > 0 ? bot.symbols : [''],
       amount: bot.moneyAmount != null ? String(bot.moneyAmount) : '',
       currency: bot.moneyCurrency ?? 'USDT',
       wallet: '',
@@ -136,8 +125,7 @@ export function BotsScreen() {
       return
     }
 
-    const requiredCount = getRequiredSymbolCount(strategies, formState.strategyId)
-    const sanitizedSymbols = normalizeSymbols(formState.symbols, requiredCount).map((symbol) => symbol.trim())
+    const sanitizedSymbols = normalizeSymbols(formState.symbols)
     if (sanitizedSymbols.some((symbol) => !symbol)) {
       return
     }
@@ -160,9 +148,6 @@ export function BotsScreen() {
 
     setIsDialogOpen(false)
   }
-
-  const activeStrategyMeta = strategies.find((strategy) => String(strategy.id) === formState.strategyId)
-  const requiresMultipleSymbols = (activeStrategyMeta?.symbols_required ?? 1) > 1
 
   return (
     <section aria-labelledby="bots-heading" className="page">
@@ -274,11 +259,9 @@ export function BotsScreen() {
                     value={formState.strategyId}
                     onChange={(event) => {
                       const nextStrategyId = event.target.value
-                      const requiredCount = getRequiredSymbolCount(strategies, nextStrategyId)
                       setFormState({
                         ...formState,
                         strategyId: nextStrategyId,
-                        symbols: normalizeSymbols(formState.symbols, requiredCount),
                       })
                     }}
                   >
@@ -288,30 +271,47 @@ export function BotsScreen() {
                       </option>
                     ))}
                   </select>
-                  <p className="field-help">
-                    {requiresMultipleSymbols
-                      ? 'This strategy requires several symbols.'
-                      : 'This strategy uses a single symbol.'}
-                  </p>
                 </label>
 
                 <div className="field">
                   <span className="field-label">
-                    Symbol{formState.symbols.length > 1 ? 's' : ''}
+                    Symbols
                   </span>
                   {formState.symbols.map((symbol, index) => (
-                    <input
-                      key={index}
-                      type="text"
-                      value={symbol}
-                      onChange={(event) => {
-                        const nextSymbols = [...formState.symbols]
-                        nextSymbols[index] = event.target.value.toUpperCase()
-                        setFormState({ ...formState, symbols: nextSymbols })
-                      }}
-                      placeholder={index === 0 ? 'e.g. BTC' : 'Additional symbol'}
-                    />
+                    <div key={index} className="field-row">
+                      <input
+                        type="text"
+                        value={symbol}
+                        onChange={(event) => {
+                          const nextSymbols = [...formState.symbols]
+                          nextSymbols[index] = event.target.value.toUpperCase()
+                          setFormState({ ...formState, symbols: nextSymbols })
+                        }}
+                        placeholder={index === 0 ? 'e.g. BTC' : 'Additional symbol'}
+                      />
+                      {formState.symbols.length > 1 ? (
+                        <button
+                          type="button"
+                          className="ghost-button"
+                          onClick={() =>
+                            setFormState({
+                              ...formState,
+                              symbols: formState.symbols.filter((_, currentIndex) => currentIndex !== index),
+                            })
+                          }
+                        >
+                          Remove
+                        </button>
+                      ) : null}
+                    </div>
                   ))}
+                  <button
+                    type="button"
+                    className="ghost-button"
+                    onClick={() => setFormState({ ...formState, symbols: [...formState.symbols, ''] })}
+                  >
+                    Add symbol
+                  </button>
                 </div>
 
                 <div className="field field--inline">
@@ -380,7 +380,7 @@ export function BotsScreen() {
                 disabled={
                   !formState.name.trim() ||
                   !formState.strategyId ||
-                  formState.symbols.some((symbol) => !symbol.trim())
+                    formState.symbols.every((symbol) => !symbol.trim())
                 }
               >
                 Save bot

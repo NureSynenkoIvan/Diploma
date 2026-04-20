@@ -23,8 +23,6 @@ class StrategyResponse(BaseModel):
     id: int
     name: str
     description: str | None
-    symbols_required: int
-    timeframe: str
 
 
 @router.get("", response_model=list[StrategyResponse])
@@ -34,9 +32,7 @@ async def list_strategies(db: Session = Depends(get_db)) -> list[StrategyRespons
         StrategyResponse(
             id=row.id,
             name=row.name,
-            description=row.description,
-            symbols_required=row.symbols_required,
-            timeframe=row.timeframe,
+            description=row.description
         )
         for row in rows
     ]
@@ -55,8 +51,7 @@ async def list_strategies(db: Session = Depends(get_db)) -> list[StrategyRespons
             id=row.id,
             name=row.name,
             description=row.description,
-            symbols_required=row.symbols_required,
-            timeframe=row.timeframe,
+            symbols_required=row.symbols_required
         )
         for row in rows
     ]

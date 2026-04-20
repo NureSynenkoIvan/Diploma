@@ -1,6 +1,6 @@
 from time import sleep
 import threading
-from utils.Timeframe import Timeframe
+from utils.timeframe import Timeframe
 from executor.Bot import Bot
 
 class Executor:

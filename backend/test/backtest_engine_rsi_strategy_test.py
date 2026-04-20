@@ -6,7 +6,7 @@ from executor.backtest.BacktestEngine import BacktestEngine  # Update 'your_modu
 
 # Import the specific strategy
 from strategies.implementation.RSIStrategy import RSIStrategy
-from utils.Timeframe import Timeframe
+from utils.timeframe import Timeframe
 
 
 class TestBacktestEngine(unittest.TestCase):

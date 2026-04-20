@@ -4,3 +4,6 @@ sqlalchemy
 python-multipart
 pandas
 ta-lib
+asyncpg
+psycopg2-binary
+requests

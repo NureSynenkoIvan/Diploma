@@ -1,6 +1,5 @@
-from strategies.implementation.RSIStrategy import RSIStrategy, NPositionsRSIStrategy
+from strategies.implementation.RSIStrategy import RSIStrategy
 
 STRATEGY_CLASSES = {
-    "RSIStrategy": RSIStrategy,
-    "1/N Positions RSI": NPositionsRSIStrategy,
+    "RSIStrategy": RSIStrategy
 }

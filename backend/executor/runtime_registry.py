@@ -101,7 +101,6 @@ class BotRuntimeRegistry:
         runtime_strategy = self._strategy_factory.create(strategy.name)
         runtime_strategy.name = strategy.name
         runtime_strategy.description = strategy.description
-        runtime_strategy.required_symbols = strategy.symbols_required
         if money_amount is not None:
             runtime_strategy.money_amount = money_amount
         if money_symbol is not None:
