@@ -7,8 +7,8 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.api.auth import hash_password
-from app.database.models import User
-from app.database.session import get_db
+from app.data.database.models import User
+from app.data.database.session import get_db
 
 router = APIRouter(prefix="/users", tags=["Users"])
 

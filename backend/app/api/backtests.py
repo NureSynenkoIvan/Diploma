@@ -8,9 +8,9 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.executor.backtest.BacktestEngine import BacktestEngine
-from app.database.models import BacktestResult, Strategy
-from app.database.session import get_db
+from app.backtest.BacktestEngine import BacktestEngine
+from app.data.database.models import BacktestResult, Strategy
+from app.data.database.session import get_db
 from app.executor import StrategyFactory
 
 router = APIRouter(prefix="/backtests", tags=["Backtests"])
@@ -170,7 +170,7 @@ def run_backtest(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(error))
 
     engine = BacktestEngine()
-    engine_result = engine.run(runtime_strategy, historical_data, money_amount, money_symbol)
+    engine_result = engine.run(runtime_strategy, dataset_file, money_amount, money_symbol)
 
     resolved_dataset_name = dataset_name or dataset_file.filename or f"manual-{datetime.utcnow().isoformat()}"
 

@@ -4,8 +4,8 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.database.models import Strategy
-from app.database.session import get_db
+from app.data.database.models import Strategy
+from app.data.database.session import get_db
 from app.api.strategies.strategies import STRATEGY_CLASSES
 
 router = APIRouter(prefix="/strategies", tags=["Strategies"])

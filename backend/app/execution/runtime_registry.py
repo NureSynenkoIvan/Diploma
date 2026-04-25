@@ -6,9 +6,9 @@ import pkgutil
 import threading
 from dataclasses import dataclass
 
-from app.database.models import Bot as BotModel
-from app.database.models import Strategy as StrategyModel
-from app.database.session import SessionLocal
+from app.data.database.models import Bot as BotModel
+from app.data.database.models import Strategy as StrategyModel
+from app.data.database.session import SessionLocal
 from app.executor.Bot import Bot as RuntimeBot
 from app.executor.implementation.MultithreadExecutor import MultithreadExecutor
 from app.strategies.Strategy import Strategy as BaseStrategy

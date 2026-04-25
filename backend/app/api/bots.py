@@ -7,9 +7,9 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.database.models import Bot, Strategy
-from app.database.session import get_db
-from app.executor import BotRuntimeRegistry
+from app.data.database.models import Bot, Strategy
+from app.data.database.session import get_db
+from app.execution.runtime_registry import BotRuntimeRegistry
 
 router = APIRouter(prefix="/bots", tags=["Bots"])
 
