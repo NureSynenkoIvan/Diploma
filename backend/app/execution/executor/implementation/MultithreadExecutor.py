@@ -1,6 +1,6 @@
 
 import time
-from app.executor.Executor import Executor
+from app.execution.executor.Executor import Executor
 import concurrent.futures
 import os
 

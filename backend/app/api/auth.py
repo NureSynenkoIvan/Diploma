@@ -12,8 +12,8 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.database.models import User
-from app.database.session import get_db
+from app.data.database.models import User
+from app.data.database.session import get_db
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -35,12 +35,6 @@ class LoginResponse(BaseModel):
     token_type: str = "bearer"
 
 
-def hash_password(password: str) -> str:
-    salt = secrets.token_bytes(_PBKDF2_SALT_BYTES)
-    digest = hashlib.pbkdf2_hmac(_PBKDF2_ALGO, password.encode("utf-8"), salt, _PBKDF2_ITERATIONS)
-    salt_b64 = base64.b64encode(salt).decode("ascii")
-    digest_b64 = base64.b64encode(digest).decode("ascii")
-    return f"pbkdf2_{_PBKDF2_ALGO}${_PBKDF2_ITERATIONS}${salt_b64}${digest_b64}"
 
 
 def verify_password(password: str, stored_hash: str) -> bool:

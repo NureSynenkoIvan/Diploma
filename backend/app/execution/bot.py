@@ -1,6 +1,6 @@
-from app.executor.execution.ExecutionEngine import ExecutionEngine
+from app.execution.execution_engine import ExecutionEngine
 from app.strategies.Strategy import Strategy
-from app.executor.Context import Context
+from app.execution.context import Context
 
 
 class Bot:
@@ -17,8 +17,6 @@ class Bot:
         self.execution_engine = execution_engine
         self.regime = regime
         self.portfolio_provider = portfolio_provider
-
-        self.startingPosition
 
         strategy.validate(self)
 

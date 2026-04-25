@@ -1,6 +1,6 @@
 from time import sleep
 import threading
-from app.executor.Bot import Bot
+from app.execution.bot import Bot
 
 class Executor:
     def __init__(self, bots = list[Bot], sleep_time = 1):

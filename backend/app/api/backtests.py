@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from app.backtest.BacktestEngine import BacktestEngine
 from app.data.database.models import BacktestResult, Strategy
 from app.data.database.session import get_db
-from app.executor import StrategyFactory
+from app.execution.runtime_registry import StrategyFactory
 
 router = APIRouter(prefix="/backtests", tags=["Backtests"])
 

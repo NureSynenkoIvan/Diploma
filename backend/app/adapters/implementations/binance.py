@@ -5,8 +5,8 @@ import datetime
 import time
 
 from app.adapters.adapter import Adapter
-from app.database.database import db_session
-from app.database.models import OHLCV
+from app.data.database.session import db_session
+from app.data.database.models import OHLCV
 
 dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
 if os.path.exists(dotenv_path):

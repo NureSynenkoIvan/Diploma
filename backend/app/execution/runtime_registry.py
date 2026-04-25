@@ -9,8 +9,8 @@ from dataclasses import dataclass
 from app.data.database.models import Bot as BotModel
 from app.data.database.models import Strategy as StrategyModel
 from app.data.database.session import SessionLocal
-from app.executor.Bot import Bot as RuntimeBot
-from app.executor.implementation.MultithreadExecutor import MultithreadExecutor
+from app.execution.bot import Bot as RuntimeBot
+from app.execution.executor.implementation.MultithreadExecutor import MultithreadExecutor
 from app.strategies.Strategy import Strategy as BaseStrategy
 
 
@@ -28,7 +28,7 @@ class StrategyFactory:
         if self._loaded:
             return
 
-        package_name = "strategies.implementation"
+        package_name = "app.strategies.implementation"
         package = importlib.import_module(package_name)
 
         for module_info in pkgutil.iter_modules(package.__path__):

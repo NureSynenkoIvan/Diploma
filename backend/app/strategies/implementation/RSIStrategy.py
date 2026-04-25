@@ -1,7 +1,7 @@
 from collections import deque
 
 from app.utils.timeframe import Timeframe
-from app.executor import SimpleSignal
+from app.execution.signal import SimpleSignal
 from app.strategies.Strategy import Strategy
 
 import talib
@@ -11,7 +11,7 @@ from app.strategies.rules.strategy_requirements import MustBePandasDataFrame, Mu
 
 class RSIStrategy(Strategy):
     """Default values were gotten from Backtests.ipynb"""
-    def __init__(self, symbol="BTC/USDT", timeframe=Timeframe.ONE_MINUTE, rsi_period=8, overbought_threshold=62, oversold_threshold=36):
+    def __init__(self, symbol : str ="BTC/USDT", timeframe=Timeframe.ONE_MINUTE, rsi_period=8, overbought_threshold=62, oversold_threshold=36):
         super().__init__("RSIStrategy",
                          "Simple RSI strategy")
         self.required_symbols = [symbol]

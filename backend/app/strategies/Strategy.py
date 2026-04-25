@@ -1,4 +1,4 @@
-from app.executor import Context
+from app.execution.context import Context
 from app.strategies.rules.strategy_requirements import Requirement, DataRequirement
 import inspect
 

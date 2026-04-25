@@ -1,8 +1,8 @@
 import unittest
 
-from app.executor import BacktestResult
+from app.backtest.BacktestResult import BacktestResult
 
-from app.executor.backtest.BacktestEngine import BacktestEngine  # Update 'your_module' to the actual folder
+from app.backtest.BacktestEngine import BacktestEngine  # Update 'your_module' to the actual folder
 
 # Import the specific strategy
 from app.strategies.implementation.RSIStrategy import RSIStrategy

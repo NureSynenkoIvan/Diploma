@@ -1,5 +1,5 @@
-from app.executor.execution import Order
-from app.executor.portfolio.Position import Position
+from app.execution.order import Order
+from app.portfolio.Position import Position
 
 
 class Portfolio:

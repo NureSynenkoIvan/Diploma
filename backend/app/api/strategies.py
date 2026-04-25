@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.data.database.models import Strategy
 from app.data.database.session import get_db
-from app.api.strategies.strategies import STRATEGY_CLASSES
+from app.strategies.registry import STRATEGY_CLASSES
 
 router = APIRouter(prefix="/strategies", tags=["Strategies"])
 

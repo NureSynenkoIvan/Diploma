@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from app.adapters.adapter_registry import get_adapter
-from app.database.database import find_gaps, db_session
+from app.data.database.session import find_gaps, db_session
 
 class BackfillService:
     def __init__(self, exchange: str):

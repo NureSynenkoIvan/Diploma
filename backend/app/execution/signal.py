@@ -1,4 +1,4 @@
-from app.executor.execution.Order import Order
+from app.execution.order import Order
 
 
 class Signal:

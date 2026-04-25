@@ -1,4 +1,4 @@
-from app.executor.portfolio.Portfolio import Portfolio
+from app.portfolio.Portfolio import Portfolio
 
 
 class PortfolioProvider:

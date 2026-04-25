@@ -7,3 +7,6 @@ ta-lib
 asyncpg
 psycopg2-binary
 requests
+celery
+redis
+ccxt

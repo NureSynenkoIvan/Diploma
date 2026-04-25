@@ -10,6 +10,34 @@ services:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/app
       - FASTAPI_ROOT_PATH=/api
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+  
+  db:
+    image: timescale/timescaledb:latest-pg18
+    environment:
+      POSTGRES_DB: app
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/home/postgres/pgdata/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  worker:
+    build: 
+      context: ./backend
+    command: celery -A app.background_tasks.celery_app worker --loglevel=info --concurrency=1
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/app
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
 
   frontend:
     build:
@@ -23,16 +51,7 @@ services:
     ports:
       - "5173:80"
 
-  db:
-    image: timescale/timescaledb:latest-pg18
-    environment:
-      POSTGRES_DB: app
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/home/postgres/pgdata/data
+  
 
 volumes:
   backend_data:

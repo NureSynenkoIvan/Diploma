@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
-from app.celery_app import celery
-from app.service.backfill_service import BackfillService
+from app.background_tasks.celery_app import celery
+from app.data.service.backfill_service import BackfillService
 
 
 @celery.task(bind=True, name="backfill_ohlcv")
