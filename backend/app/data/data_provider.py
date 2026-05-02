@@ -27,6 +27,11 @@ class PandasBacktestDataProvider(MarketDataProvider):
         self.historical_data = self.historical_data.iloc[1:]
         return row
 
+class GapsFoundError(Exception):
+    def __init__(self, gaps, timeframe):
+        self.gaps = gaps
+        self.timeframe = timeframe
+
 class OHLCVDataProvider(MarketDataProvider):
     def __init__(
         self,
@@ -51,9 +56,7 @@ class OHLCVDataProvider(MarketDataProvider):
         )
 
         if gaps:
-            print(f"Warning: Found {len(gaps)} gaps. Backfill tasks triggered.")
-
-
+            raise GapsFoundError(gaps, timeframe)
 
         self.data = rows
         self.cursor = 0

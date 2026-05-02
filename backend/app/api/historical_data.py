@@ -8,12 +8,51 @@ from starlette.responses import StreamingResponse
 
 from app.background_tasks.celery_app import celery
 from app.background_tasks.tasks.backfill import backfill_ohlcv_task
-import app.data.service as data_service
+import app.data.service as service
 from celery.result import AsyncResult
 
 from fastapi import APIRouter, Query, HTTPException
 
-router = APIRouter(prefix="/users", tags=["Users"])
+router = APIRouter(prefix="/historical_data", tags=["Historical data"])
+
+class OHLCVCandle(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    timestamp: datetime
+    open: float
+    high: float
+    low: float
+    close: float
+    volume: float
+
+class OHLCVResponse(BaseModel):
+    status: str
+    exchange: str
+    symbol: str
+    start_timestamp: datetime
+    end_timestamp: datetime
+    data: List[OHLCVCandle]
+    count: int
+
+
+class BackfillRequest(BaseModel):
+    start_time: str
+    end_time: str
+    timeframe: str
+    exchange: str
+    symbol: str
+
+
+class BackfillResponse(BaseModel):
+    status: str
+    job_id: str
+    exchange: str
+    symbol: str
+    start_timestamp: datetime
+    end_timestamp: datetime
+    message: str
+
+
 
 def results_to_csv(results) -> str:
     output = io.StringIO()
@@ -36,7 +75,7 @@ async def get_ohlcv(
     start_dt = datetime.fromisoformat(start_time.strip().replace("Z", "+00:00"))
     end_dt = datetime.fromisoformat(end_time.strip().replace("Z", "+00:00"))
 
-    results, gaps = data_service.get_data_between_dates(
+    results, gaps = service.ohlcv_service.get_ohlcv_between_dates(
         start_date=start_dt,
         end_date=end_dt,
         exchange=exchange,
@@ -67,13 +106,6 @@ async def get_ohlcv(
             data=results,
             count=len(results),
         )
-
-
-class BackfillResponse:
-    pass
-
-class OHLCVResponse:
-    pass
 
 @router.post("/ohlcv", response_model=BackfillResponse)
 async def backfill_ohlcv(start_time: str = Query(..., description="Start timestamp (ISO 8601 format, e.g., 2024-01-01T00:00:00Z)"),
@@ -123,39 +155,3 @@ async def get_job_status(job_id: str):
         "meta": result.info if result.state != "PENDING" else None,
     }
 
-class OHLCVCandle(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    timestamp: datetime.datetime
-    open: float
-    high: float
-    low: float
-    close: float
-    volume: float
-
-class OHLCVResponse(BaseModel):
-    status: str
-    exchange: str
-    symbol: str
-    start_timestamp: datetime
-    end_timestamp: datetime
-    data: List[OHLCVCandle]
-    count: int
-
-
-class BackfillRequest(BaseModel):
-    start_time: str
-    end_time: str
-    timeframe: str
-    exchange: str
-    symbol: str
-
-
-class BackfillResponse(BaseModel):
-    status: str
-    job_id: str
-    exchange: str
-    symbol: str
-    start_timestamp: datetime
-    end_timestamp: datetime
-    message: str

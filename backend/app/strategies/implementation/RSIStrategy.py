@@ -1,6 +1,5 @@
 from collections import deque
 
-from app.utils.timeframe import Timeframe
 from app.execution.signal import SimpleSignal
 from app.strategies.Strategy import Strategy
 
@@ -11,10 +10,11 @@ from app.strategies.rules.strategy_requirements import MustBePandasDataFrame, Mu
 
 class RSIStrategy(Strategy):
     """Default values were gotten from Backtests.ipynb"""
-    def __init__(self, symbol : str ="BTC/USDT", timeframe=Timeframe.ONE_MINUTE, rsi_period=8, overbought_threshold=62, oversold_threshold=36):
+    def __init__(self, symbol : str ="BTC/USDT", exchange = "binance", timeframe="1m", rsi_period=8, overbought_threshold=62, oversold_threshold=36):
         super().__init__("RSIStrategy",
                          "Simple RSI strategy")
-        self.required_symbols = [symbol]
+        self.symbol = symbol
+        self.exchange = exchange
         self.timeframe = timeframe
         self.rsi_period = rsi_period
         self.overbought_threshold = overbought_threshold
@@ -24,7 +24,7 @@ class RSIStrategy(Strategy):
         self.data_window = deque(maxlen=self.max_window)
 
     def on_tick(self, context):
-        self.data_window.append(context.market_data['Close'])
+        self.data_window.append(context.market_data['close'])
 
         if len(self.data_window) < self.max_window:
             return []
@@ -41,13 +41,13 @@ class RSIStrategy(Strategy):
         portfolio = context.portfolio
         last_close_price = close_prices[-1]
         if current_rsi > self.overbought_threshold and len(portfolio.positions) > 0:
-            return [SimpleSignal(symbol=self.required_symbols[0],
+            return [SimpleSignal(symbol=self.symbol,
                                  quantity=portfolio.positions[0].quantity,
                                  price=last_close_price,
                                  side="sell")]
         elif current_rsi < self.oversold_threshold and len(portfolio.positions) <= 0:
             target_asset_quantity = portfolio.base_token_amount / last_close_price
-            return [SimpleSignal(symbol=self.required_symbols[0],
+            return [SimpleSignal(symbol=self.symbol,
                                  quantity=target_asset_quantity,
                                  price=last_close_price,
                                  side="buy")]
@@ -56,7 +56,7 @@ class RSIStrategy(Strategy):
 
 class NPositionsRSIStrategy(RSIStrategy):
     """Regular RSI is better. See ..\\notebooks\\Backtests.ipynb"""
-    def __init__(self, symbol="BTC/USDT", timeframe=Timeframe.ONE_MINUTE, rsi_period=8, overbought_threshold=70, oversold_threshold=35, max_positions=10):
+    def __init__(self, symbol="BTC/USDT", timeframe="1m", rsi_period=8, overbought_threshold=70, oversold_threshold=35, max_positions=10):
         super().__init__(symbol, timeframe, rsi_period, overbought_threshold, oversold_threshold)
         self.name="1/N Positions RSI"
         self.max_positions = max_positions
@@ -66,7 +66,7 @@ class NPositionsRSIStrategy(RSIStrategy):
         self.position_size = context.portfolio.base_token_amount / self.max_positions
 
     def on_tick(self, context):
-        self.data_window.append(context.market_data['Close'])
+        self.data_window.append(context.market_data['close'])
 
         if len(self.data_window) < self.max_window:
             return []

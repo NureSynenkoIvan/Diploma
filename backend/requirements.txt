@@ -9,4 +9,5 @@ psycopg2-binary
 requests
 celery
 redis
+flower
 ccxt

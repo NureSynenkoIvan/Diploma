@@ -7,6 +7,7 @@ import time
 from app.adapters.adapter import Adapter
 from app.data.database.session import db_session
 from app.data.database.models import OHLCV
+from app.utils.timeframe import get_candles_left
 
 dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
 if os.path.exists(dotenv_path):
@@ -20,30 +21,6 @@ exchange = ccxt.binance({
     'secret': api_secret,
     'enableRateLimit': True,  # helps prevent rate-limit issues
 })
-
-
-def get_candles_left(since_time, end_time, timeframe):
-    if isinstance(since_time, datetime.datetime) and isinstance(end_time, datetime.datetime):
-        duration_seconds = (end_time - since_time).total_seconds()
-    else:
-        # 2. Fallback if they are already millisecond timestamps (integers)
-        duration_seconds = (end_time - since_time) / 1000
-
-    # Map timeframes to seconds for easy division
-    seconds_map = {
-        "1s": 1,
-        "15s": 15,
-        "30s": 30,
-        "1m": 60,
-        "5m": 300,
-        "15m": 900,
-        "1h": 3600,
-        "4h": 14400,
-        "1d": 86400
-    }
-
-    divider = seconds_map.get(timeframe, 60)  # Default to 1m if not found
-    return int(duration_seconds / divider)
 
 
 class BinanceAdapter(Adapter):
@@ -85,4 +62,3 @@ class BinanceAdapter(Adapter):
             candles_left = get_candles_left(since, end_time, timeframe)
             time.sleep(exchange.rateLimit / 1000)
             print(f"Loaded {len(rows)} candles up to {since}")
-

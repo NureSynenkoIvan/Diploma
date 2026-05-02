@@ -6,14 +6,13 @@ from app.backtest.BacktestEngine import BacktestEngine  # Update 'your_module' t
 
 # Import the specific strategy
 from app.strategies.implementation.RSIStrategy import RSIStrategy
-from app.utils.timeframe import Timeframe
 
 
 class TestBacktestEngine(unittest.TestCase):
     def setUp(self):
         """Set up the test environment before each test runs."""
         self.engine = BacktestEngine()
-        self.strategy = RSIStrategy(symbol="BTCUSDT", timeframe=Timeframe.ONE_MINUTE)
+        self.strategy = RSIStrategy(symbol="BTCUSDT", timeframe="1m")
         
         # Your specific test data file
         self.historical_data_file = r"/app/data\backtest_data\binance\backtest_data_btc_usdt_2026-02-01_00-00-00_2026-03-01_00-00-00_1m.csv"

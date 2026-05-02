@@ -44,3 +44,10 @@ class Strategy:
                 "default": default,
             })
         return params
+
+    def to_dict(self):
+        params = self.get_parameters_schema()
+        strategy_dict = {}
+        for param in params:
+            strategy_dict[param["key"]] = getattr(self, param["key"])
+        return strategy_dict
