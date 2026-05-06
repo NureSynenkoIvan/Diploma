@@ -41,7 +41,7 @@ def load_historical_data(strategy : Strategy, start_date : datetime, end_date : 
 
 
 @shared_task(bind=True, name="backtest_celery")
-def backtest_task(self, strategy_name : str, strategy_dict : dict, start_date : datetime, end_date : datetime, money_amount : float, retry_number=0):
+def backtest_task(self, strategy_name : str, strategy_dict : dict, start_date : datetime, end_date : datetime, money_amount : float):
     try:
         print("Starting backtest ...")
         strategy_class = STRATEGY_CLASSES[strategy_name]
@@ -81,7 +81,10 @@ def backtest_task(self, strategy_name : str, strategy_dict : dict, start_date : 
         wait_time = 0
         for gap in e.gaps:
             wait_time += approximate_wait_time(gap[0], gap[1], e.timeframe)
-            print(f"Data not present in DB! Backfill tasks launched, retrying in {wait_time} seconds")
-            backtest_task.apply_async(args=[strategy_name, strategy.to_dict(), start_date, end_date, money_amount, retry_number + 1], countdown=wait_time)
-        else:
-            raise Exception("Error creating backtest task! For some reason number of retries exceeded max permitted value.")
+        print(f"Gaps found. Retrying same Task ID ({self.request.id}) in {wait_time}s.")
+
+        raise self.retry(
+            exc=e,
+            countdown=wait_time,
+            max_retries=MAX_RECURSION_DEPTH
+        )
